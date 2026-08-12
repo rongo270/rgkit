@@ -5,11 +5,22 @@ Android library module. Kotlin, minSdk 24. One dependency:
 
 ## Add to an app
 
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:screenshot-intelligence:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
+
 ```kotlin
 // settings.gradle.kts
 include(":screenshotiq")
 project(":screenshotiq").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/screenshot-intelligence/android/screenshotiq")
+    file("/path/to/rgkit/screenshot-intelligence/android/screenshotiq")
 
 // app/build.gradle.kts
 dependencies {

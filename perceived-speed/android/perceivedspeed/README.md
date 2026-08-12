@@ -5,13 +5,22 @@ permissions.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:perceived-speed:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":perceivedspeed")
 project(":perceivedspeed").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/perceived-speed/android/perceivedspeed")
+    file("/path/to/rgkit/perceived-speed/android/perceivedspeed")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the file** (`PerceivedSpeed.kt`) into the app's source tree.
+**Option C — copy the file** (`PerceivedSpeed.kt`) into the app's source tree.
 
 ## Use
 

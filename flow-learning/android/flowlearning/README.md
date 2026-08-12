@@ -5,13 +5,22 @@ permissions.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:flow-learning:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":flowlearning")
 project(":flowlearning").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/flow-learning/android/flowlearning")
+    file("/path/to/rgkit/flow-learning/android/flowlearning")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the file** (`FlowLearning.kt`) into the app's source tree.
+**Option C — copy the file** (`FlowLearning.kt`) into the app's source tree.
 
 ## Use
 

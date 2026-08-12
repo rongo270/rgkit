@@ -5,13 +5,22 @@ Declares only `ACCESS_NETWORK_STATE` (normal permission).
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:context-moments:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":contextmoments")
 project(":contextmoments").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/context-moments/android/contextmoments")
+    file("/path/to/rgkit/context-moments/android/contextmoments")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the file** (`ContextMoments.kt`) into the app's source tree.
+**Option C — copy the file** (`ContextMoments.kt`) into the app's source tree.
 Add `ACCESS_NETWORK_STATE` to the app manifest in that case.
 
 ## Use

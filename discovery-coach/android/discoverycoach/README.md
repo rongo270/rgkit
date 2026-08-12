@@ -5,13 +5,22 @@ permissions.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:discovery-coach:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":discoverycoach")
 project(":discoverycoach").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/discovery-coach/android/discoverycoach")
+    file("/path/to/rgkit/discovery-coach/android/discoverycoach")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the file** (`DiscoveryCoach.kt`) into the app's source tree.
+**Option C — copy the file** (`DiscoveryCoach.kt`) into the app's source tree.
 
 ## Use
 

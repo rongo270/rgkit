@@ -5,13 +5,22 @@ optional `Modifier.senseField` helper — the core tracker is plain Kotlin.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:form-sense:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":formsense")
 project(":formsense").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/form-sense/android/formsense")
+    file("/path/to/rgkit/form-sense/android/formsense")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the files** (`FormSense.kt`, plus `FormSenseCompose.kt` if
+**Option C — copy the files** (`FormSense.kt`, plus `FormSenseCompose.kt` if
 the app uses Compose).
 
 > Kotlin version note: the module applies `org.jetbrains.kotlin.plugin.compose`

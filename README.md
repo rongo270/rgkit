@@ -12,6 +12,31 @@ A family of local-first mobile SDKs. Shared philosophy:
 - **Honest heuristics** — every inference carries a confidence and the
   evidence used, and returns null/empty rather than guessing without data.
 
+## Install
+
+Every SDK is on Maven Central under `io.github.rongo270`. The artifactId is the
+SDK's folder name below — no extra repository needed, `mavenCentral()` is
+already in every Android project.
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:exit-reason:0.1.0")
+    implementation("io.github.rongo270:intent-engine:0.1.0")
+}
+```
+
+The groupId is `io.github.rongo270`, but the Kotlin packages are `dev.rgkit.*` —
+those are independent, a groupId only has to be a namespace the publisher owns:
+
+```kotlin
+import dev.rgkit.exitreason.ExitReason
+```
+
+Each module README also covers including the module from a local clone, or
+copying the source file straight into an app. Releasing is documented in
+[PUBLISHING.md](PUBLISHING.md).
+
 ## Catalog
 
 | SDK | One-liner |
@@ -60,5 +85,7 @@ ContextMoments.sampleNow { if (it.moment !in badMoments) notifyAt(window) }
     └── src/main/...
 ```
 
-Modules are included by path from `settings.gradle.kts` (see each module
-README), so one checkout serves every app.
+Every module is a Gradle project of this build (see `settings.gradle.kts`) and
+publishes as `io.github.rongo270:<sdk-name>`. Apps normally just declare the
+Maven coordinate; including a module by path still works for local development
+against an unreleased change.

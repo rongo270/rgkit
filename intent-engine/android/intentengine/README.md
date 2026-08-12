@@ -6,13 +6,22 @@ core engine is plain Kotlin.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:intent-engine:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":intentengine")
 project(":intentengine").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/intent-engine/android/intentengine")
+    file("/path/to/rgkit/intent-engine/android/intentengine")
 
 // app/build.gradle.kts
 dependencies {
@@ -20,7 +29,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the files** (`IntentEngine.kt`, `IntentEngineAuto.kt`, and
+**Option C — copy the files** (`IntentEngine.kt`, `IntentEngineAuto.kt`, and
 `IntentEngineCompose.kt` if the app uses Compose) into the app's source tree.
 
 > Kotlin version note: the module applies `org.jetbrains.kotlin.plugin.compose`

@@ -5,13 +5,22 @@ dependencies beyond the Compose BOM.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:adaptive-ui:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":adaptiveui")
 project(":adaptiveui").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/adaptive-ui/android/adaptiveui")
+    file("/path/to/rgkit/adaptive-ui/android/adaptiveui")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the two files** (`AdaptiveUi.kt`, `AdaptiveCollection.kt`)
+**Option C — copy the two files** (`AdaptiveUi.kt`, `AdaptiveCollection.kt`)
 into the app's source tree (app must already use Compose + Material 3).
 
 > Kotlin version note: the module applies `org.jetbrains.kotlin.plugin.compose`

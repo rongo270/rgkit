@@ -5,13 +5,22 @@ optional `GripHeatmapOverlay` debug composable — the engine is plain Kotlin.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:grip-sense:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":gripsense")
 project(":gripsense").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/grip-sense/android/gripsense")
+    file("/path/to/rgkit/grip-sense/android/gripsense")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the files** (`GripSense.kt`, plus `GripSenseOverlay.kt` if
+**Option C — copy the files** (`GripSense.kt`, plus `GripSenseOverlay.kt` if
 the app uses Compose).
 
 > Kotlin version note: the module applies `org.jetbrains.kotlin.plugin.compose`

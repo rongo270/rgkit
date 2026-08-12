@@ -5,13 +5,22 @@ permissions.
 
 ## Add to an app
 
-**Option A — include the module:**
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:rhythm-engine:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":rhythmengine")
 project(":rhythmengine").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/rhythm-engine/android/rhythmengine")
+    file("/path/to/rgkit/rhythm-engine/android/rhythmengine")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the file** (`RhythmEngine.kt`) into the app's source tree.
+**Option C — copy the file** (`RhythmEngine.kt`) into the app's source tree.
 
 ## Use
 

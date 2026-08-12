@@ -5,13 +5,22 @@ dependencies beyond the Compose BOM.
 
 ## Add to an app
 
-**Option A — include the module** (updates in one place benefit every app):
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:feature-usage:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":featureusage")
 project(":featureusage").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/feature-usage/android/featureusage")
+    file("/path/to/rgkit/feature-usage/android/featureusage")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the two files** (`FeatureUsage.kt`, `FeatureUsageScreen.kt`)
+**Option C — copy the two files** (`FeatureUsage.kt`, `FeatureUsageScreen.kt`)
 into the app's source tree. Zero build changes if the app already uses Compose.
 
 > Kotlin version note: the module's `build.gradle.kts` applies

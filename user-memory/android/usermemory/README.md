@@ -5,13 +5,22 @@ dependencies beyond the Compose BOM.
 
 ## Add to an app
 
-**Option A — include the module** (updates in one place benefit every app):
+**Option A — Maven Central (recommended):**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.github.rongo270:user-memory:0.1.0")
+}
+```
+
+**Option B — include the module from a local clone:**
 
 ```kotlin
 // settings.gradle.kts
 include(":usermemory")
 project(":usermemory").projectDir =
-    file("/Users/rongo/Desktop/progrems/sdks/user-memory/android/usermemory")
+    file("/path/to/rgkit/user-memory/android/usermemory")
 
 // app/build.gradle.kts
 dependencies {
@@ -19,7 +28,7 @@ dependencies {
 }
 ```
 
-**Option B — copy the two files** (`UserMemory.kt`, `UserMemoryScreen.kt`) into
+**Option C — copy the two files** (`UserMemory.kt`, `UserMemoryScreen.kt`) into
 the app's source tree. Zero build changes if the app already uses Compose.
 
 > Kotlin version note: the module's `build.gradle.kts` applies
