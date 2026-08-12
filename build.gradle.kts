@@ -10,6 +10,13 @@ plugins {
 // the whole tree into the single archive the Central Portal wants.
 val stagingRepo = layout.buildDirectory.dir("staging-deploy")
 
+// Wipe staging first so a stale artifact from an older version can never end
+// up inside the uploaded bundle. Declared before `subprojects` so each publish
+// task can order itself after it.
+val clearStaging by tasks.registering(Delete::class) {
+    delete(stagingRepo)
+}
+
 subprojects {
     group = providers.gradleProperty("GROUP").get()
     version = providers.gradleProperty("VERSION_NAME").get()
@@ -83,6 +90,13 @@ subprojects {
                 }
             }
 
+            // dependsOn alone does not order siblings. Without this, a parallel
+            // build is free to run clearStaging *after* the publish and delete
+            // the artifacts it just wrote.
+            tasks.named("publishReleasePublicationToStagingRepository") {
+                mustRunAfter(clearStaging)
+            }
+
             extensions.configure<SigningExtension> {
                 val inMemoryKey = providers.gradleProperty("signingInMemoryKey").orNull
                 val gpgKeyName = providers.gradleProperty("signing.gnupg.keyName").orNull
@@ -110,12 +124,6 @@ subprojects {
             }
         }
     }
-}
-
-// Wipe staging first so a stale artifact from an older version can never end
-// up inside the uploaded bundle.
-val clearStaging by tasks.registering(Delete::class) {
-    delete(stagingRepo)
 }
 
 val publishAllToStaging by tasks.registering {

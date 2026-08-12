@@ -8,14 +8,34 @@ local.properties
 *.iml
 captures/
 .cxx/
+.externalNativeBuild/
+.gradletasknamecache
+# Kotlin 2.x build-session scratch dir
+.kotlin/
 
 # IntelliJ / Android Studio
 .idea/
 
-# Swift Package Manager
+# Swift Package Manager / Xcode
 .build/
 .swiftpm/
 Package.resolved
 DerivedData/
 *.xcuserstate
 xcuserdata/
+
+# Crash / heap dumps and logs
+*.hprof
+*.log
+
+# Signing material — must NEVER be committed. The signing key lives in
+# ~/.gnupg and its id in ~/.gradle/gradle.properties. See PUBLISHING.md.
+*.asc
+*.gpg
+*.jks
+*.keystore
+secring.*
+keystore.properties
+
+# The wrapper jar MUST stay tracked, or ./gradlew breaks on a fresh clone.
+!gradle/wrapper/gradle-wrapper.jar

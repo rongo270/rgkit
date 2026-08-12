@@ -21,20 +21,23 @@ import dev.rgkit.exitreason.ExitReason
 
 ---
 
-## Prerequisite: Java on your PATH
+## Local machine setup — already done
 
-`java` is not installed system-wide on this Mac — only Android Studio's bundled
-JDK. Add this once to `~/.gradle/gradle.properties` so Gradle always finds it:
+These are configured on Rongo's MacBook. Listed here for a rebuild or a second
+machine.
 
-```properties
-org.gradle.java.home=/Applications/Android Studio.app/Contents/jbr/Contents/Home
-```
+| What | Where |
+|---|---|
+| `JAVA_HOME` → Android Studio's JDK | `~/.zshrc` (there is no system `java`) |
+| GPG signing key `7724DCFE7A1E9305` | `~/.gnupg`, RSA 4096, expires 2028-08-11 |
+| `signing.gnupg.keyName` | `~/.gradle/gradle.properties` |
+| `pinentry-mac` for GUI passphrase prompts | `~/.gnupg/gpg-agent.conf` |
 
-Or export it per-shell before running Gradle:
+`gradlew` needs `JAVA_HOME` to boot the JVM — `org.gradle.java.home` alone is
+not enough, since that only tells the *daemon* which JDK to use.
 
-```bash
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-```
+Without `pinentry-mac`, gpg falls back to a curses prompt that cannot draw in a
+non-interactive shell, and signing fails.
 
 ---
 
@@ -50,36 +53,39 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 5. Back in the portal, click **Verify Namespace**.
 6. Once it flips to *Verified*, delete the temporary repo.
 
-### 2. Generate a signing key
+### 2. Publish the public key
 
-Central rejects unsigned artifacts.
+The key exists locally, but Central can only verify signatures once the
+**public** half is on a keyserver:
 
 ```bash
-brew install gnupg
-
-# RSA, 4096 bits. Expiry 2y is fine — you can extend it later.
-gpg --full-generate-key
-
-# Grab the LONG key id (the part after rsa4096/)
-gpg --list-secret-keys --keyid-format=long
-
-# Publish the PUBLIC half so Central can verify your signatures
-gpg --keyserver keyserver.ubuntu.com --send-keys <LONG_KEY_ID>
+gpg --keyserver keyserver.ubuntu.com --send-keys 7724DCFE7A1E9305
 ```
 
-Then point Gradle at it in `~/.gradle/gradle.properties` — **not** the
-`gradle.properties` in this repo, that one is committed to git:
+This is permanent and public — keyservers do not support deletion. It uploads
+only the public key and the `Rongo <rongoapp2026@gmail.com>` user id. The
+private key never leaves `~/.gnupg`.
 
-```properties
-signing.gnupg.keyName=<LONG_KEY_ID>
+To recreate the key from scratch on a new machine:
+
+```bash
+brew install gnupg pinentry-mac
+gpg --quick-generate-key "Rongo <rongoapp2026@gmail.com>" rsa4096 sign 2y
+gpg --list-secret-keys --keyid-format=long   # id is after rsa4096/
 ```
 
-gpg-agent will prompt for your passphrase when you sign.
+Put the id in `~/.gradle/gradle.properties` as `signing.gnupg.keyName` —
+**never** in this repo's `gradle.properties`, which is committed to git.
 
-### 3. Generate a portal token
+**Back up the private key.** If you lose it you cannot publish updates signed
+by the same identity:
 
-In the portal: **Account → Generate User Token**. Keep it — you'll need it for
-API uploads. For the web upload flow below you can skip this.
+```bash
+gpg --export-secret-keys --armor 7724DCFE7A1E9305 > ~/rgkit-signing-key.asc
+```
+
+Store that file somewhere safe and offline — anyone holding it plus the
+passphrase can sign releases as you.
 
 ---
 
