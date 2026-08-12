@@ -1,6 +1,8 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("maven-publish")
+    id("signing")
 }
 
 android {
@@ -20,3 +22,6 @@ android {
         jvmTarget = "17"
     }
 }
+
+// Feeds <description> in the published POM.
+description = "User-felt performance: cold start, per-screen TTI, jank, tap latency and main-thread stalls with guilty stacks - one felt-score per screen."

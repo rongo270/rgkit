@@ -240,11 +240,13 @@ object ContextMoments {
         val motion = sampleMotion(context)
         val signals = readSignals(context, motion.first, motion.second)
         val scores = fuse(signals)
-        val best = scores.maxByOrNull { it.value } ?: (Moment.UNKNOWN to 0.0)
-        val second = scores.filterKeys { it != best.key }.values.maxOrNull() ?: 0.0
-        val margin = best.value - second
-        val confidence = min(1.0, max(0.0, best.value * 0.75 + margin * 0.5))
-        val moment = if (best.value < 0.35) Moment.UNKNOWN else best.key
+        val best = scores.maxByOrNull { it.value }
+        val bestMoment = best?.key ?: Moment.UNKNOWN
+        val bestScore = best?.value ?: 0.0
+        val second = scores.filterKeys { it != bestMoment }.values.maxOrNull() ?: 0.0
+        val margin = bestScore - second
+        val confidence = min(1.0, max(0.0, bestScore * 0.75 + margin * 0.5))
+        val moment = if (bestScore < 0.35) Moment.UNKNOWN else bestMoment
         val snapshot = MomentSnapshot(
             moment = moment,
             confidence = (confidence * 100).toInt() / 100.0,

@@ -4,6 +4,8 @@ plugins {
     // Kotlin 2.x Compose compiler. On Kotlin 1.9.x, remove this line and set
     // composeOptions.kotlinCompilerExtensionVersion instead (see README).
     id("org.jetbrains.kotlin.plugin.compose")
+    id("maven-publish")
+    id("signing")
 }
 
 android {
@@ -44,3 +46,6 @@ dependencies {
     // Real org.json for JVM unit tests (the android.jar copy is a stub).
     testImplementation("org.json:json:20240303")
 }
+
+// Feeds <description> in the published POM.
+description = "Feature usage tracking with a full built-in stats screen."

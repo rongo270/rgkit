@@ -4,6 +4,8 @@ plugins {
     // Kotlin 2.x Compose compiler. On Kotlin 1.9.x, remove this line and set
     // composeOptions.kotlinCompilerExtensionVersion instead (see README).
     id("org.jetbrains.kotlin.plugin.compose")
+    id("maven-publish")
+    id("signing")
 }
 
 android {
@@ -33,3 +35,6 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
 }
+
+// Feeds <description> in the published POM.
+description = "Understands why users act: rage taps, double-back, type-delete loops, scan-scrolling, failed drags, hesitation and a live frustration score."

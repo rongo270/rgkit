@@ -1,6 +1,8 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("maven-publish")
+    id("signing")
 }
 
 android {
@@ -20,3 +22,6 @@ android {
         jvmTarget = "17"
     }
 }
+
+// Feeds <description> in the published POM.
+description = "Estimates why the user left: call, rage quit, task completed, bored, battery, screen off or crash - with evidence per verdict."

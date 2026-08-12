@@ -4,6 +4,8 @@ plugins {
     // Kotlin 2.x Compose compiler. On Kotlin 1.9.x, remove this line and set
     // composeOptions.kotlinCompilerExtensionVersion instead (see README).
     id("org.jetbrains.kotlin.plugin.compose")
+    id("maven-publish")
+    id("signing")
 }
 
 android {
@@ -34,3 +36,6 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
 }
+
+// Feeds <description> in the published POM.
+description = "Local user memory store: remembers facts about the user on-device."
