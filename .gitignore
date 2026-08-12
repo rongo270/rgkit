@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Gradle / Android
+.gradle/
+build/
+local.properties
+*.iml
+captures/
+.cxx/
+
+# IntelliJ / Android Studio
+.idea/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+DerivedData/
+*.xcuserstate
+xcuserdata/
