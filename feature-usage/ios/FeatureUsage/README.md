@@ -4,9 +4,33 @@ Swift package. iOS 15+ (share buttons appear on iOS 16+). No dependencies.
 
 ## Add to an app
 
-Xcode → File → **Add Package Dependencies…** → **Add Local…** → pick this
-folder (`feature-usage/ios/FeatureUsage`) → add the `FeatureUsage` product to
-your app target.
+**Option A — Swift Package Manager (recommended):**
+
+Xcode → File → **Add Package Dependencies…** → paste
+`https://github.com/rongo270/rgkit.git` → pick the `FeatureUsage` product.
+
+Or in a `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0"),
+],
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: [.product(name: "FeatureUsage", package: "rgkit")]
+    ),
+]
+```
+
+The SPM manifest consumers resolve is the `Package.swift` at the **repository
+root** — SPM does not read manifests from subdirectories. The one next to these
+sources is for building this SDK standalone.
+
+**Option B — local clone:** Xcode → **Add Package Dependencies…** →
+**Add Local…** → pick the repo root → add the `FeatureUsage` product.
+
+**Option C — copy the sources** (`Sources/FeatureUsage/`) into your app target.
 
 ## Use
 

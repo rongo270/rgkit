@@ -14,8 +14,10 @@ A family of local-first mobile SDKs. Shared philosophy:
 
 ## Install
 
-Every SDK is on Maven Central under `io.github.rongo270`. The artifactId is the
-SDK's folder name below — no extra repository needed, `mavenCentral()` is
+### Android — Maven Central
+
+All 13 SDKs are on Maven Central under `io.github.rongo270`. The artifactId is
+the SDK's folder name below — no extra repository needed, `mavenCentral()` is
 already in every Android project.
 
 ```kotlin
@@ -36,6 +38,30 @@ import dev.rgkit.exitreason.ExitReason
 Each module README also covers including the module from a local clone, or
 copying the source file straight into an app. Releasing is documented in
 [PUBLISHING.md](PUBLISHING.md).
+
+### iOS — Swift Package Manager
+
+Two SDKs also ship for iOS, as products of one package resolved from this
+repository:
+
+```swift
+// Package.swift
+dependencies: [
+    .package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0"),
+]
+```
+
+| Product | Platforms |
+|---|---|
+| `UserMemory` | iOS 15+ / macOS 13+ |
+| `FeatureUsage` | iOS 15+ / macOS 13+ |
+
+In Xcode: File → **Add Package Dependencies…** → paste the repo URL → pick the
+products you want.
+
+SPM only reads a manifest from the repository root, so the root
+[`Package.swift`](Package.swift) is what consumers resolve. Each iOS SDK also
+keeps its own `Package.swift` beside its sources for building it standalone.
 
 ## Catalog
 
@@ -79,13 +105,21 @@ ContextMoments.sampleNow { if (it.moment !in badMoments) notifyAt(window) }
 ```
 <sdk-name>/
 ├── README.md                  what it does, quick start, limits
-└── android/<module>/          Android library module (Kotlin)
-    ├── README.md              how to add it to an app
-    ├── build.gradle.kts
-    └── src/main/...
+├── android/<module>/          Android library module (Kotlin)
+│   ├── README.md              how to add it to an app
+│   ├── build.gradle.kts
+│   └── src/main/...
+└── ios/<Name>/                Swift package (user-memory, feature-usage only)
+    ├── README.md
+    ├── Package.swift          standalone build of just this SDK
+    ├── Sources/<Name>/
+    └── Tests/<Name>Tests/
 ```
 
-Every module is a Gradle project of this build (see `settings.gradle.kts`) and
-publishes as `io.github.rongo270:<sdk-name>`. Apps normally just declare the
-Maven coordinate; including a module by path still works for local development
-against an unreleased change.
+Every Android module is a Gradle project of this build (see
+`settings.gradle.kts`) and publishes as `io.github.rongo270:<sdk-name>`. Apps
+normally just declare the Maven coordinate; including a module by path still
+works for local development against an unreleased change.
+
+The iOS SDKs are exposed as products of the root [`Package.swift`](Package.swift),
+because SPM resolves a manifest only from the repository root.
