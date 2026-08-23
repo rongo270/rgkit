@@ -1,5 +1,6 @@
 package dev.rgkit.contextmoments
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -471,6 +472,7 @@ object ContextMoments {
      * Null if permission missing. ~0.5 s mic RMS mapped to a rough dB scale
      * (≈30 quiet room … ≈75 loud). The raw audio never leaves this method.
      */
+    @SuppressLint("MissingPermission") // guarded by the checkSelfPermission early-return below
     private fun readAmbientDb(context: Context): Double? {
         if (context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED

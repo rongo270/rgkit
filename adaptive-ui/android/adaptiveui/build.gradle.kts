@@ -28,6 +28,12 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    testOptions {
+        // Lets unit tests run on the JVM: android.util.Log calls no-op
+        // instead of throwing.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -35,6 +41,10 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
+
+    testImplementation("junit:junit:4.13.2")
+    // Real org.json for JVM unit tests (the android.jar copy is a stub).
+    testImplementation("org.json:json:20240303")
 }
 
 // Feeds <description> in the published POM.

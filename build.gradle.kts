@@ -1,4 +1,5 @@
 import com.android.build.gradle.LibraryExtension
+import org.gradle.plugins.signing.Sign
 
 plugins {
     alias(libs.plugins.android.library) apply false
@@ -95,6 +96,16 @@ subprojects {
             // the artifacts it just wrote.
             tasks.named("publishReleasePublicationToStagingRepository") {
                 mustRunAfter(clearStaging)
+            }
+
+            // Signatures are only meaningful for artifacts that leave this
+            // machine. Signing a `publishToMavenLocal` run just forces a
+            // gpg-agent passphrase prompt Gradle often cannot show (it has no
+            // tty), so local installs are left unsigned.
+            tasks.withType<Sign>().configureEach {
+                onlyIf {
+                    gradle.startParameter.taskNames.none { it.contains("ToMavenLocal") }
+                }
             }
 
             extensions.configure<SigningExtension> {

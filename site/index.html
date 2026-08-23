@@ -1,0 +1,2315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="13 local-first mobile SDKs that infer intent, context, friction and rhythm entirely on-device. No backend, no API key, no account.">
+<title>rgkit</title>
+
+<style>
+/* ============================================================
+   TOKENS — light is the base; dark redefined in both scopes
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  --bg:            #eef2f3;
+  --panel:         #f8fafa;
+  --panel-2:       #ffffff;
+  --rule:          #cdd8da;
+  --rule-soft:     #dee6e7;
+
+  --ink:           #0b1416;
+  --ink-2:         #3d5157;
+  --ink-3:         #6b8288;
+
+  --accent:        #00727d;
+  --accent-soft:   #d3e9ec;
+  --accent-line:   #9dcbd1;
+
+  --series-1:      #008e9b;
+  --series-2:      #bf5f08;
+  --good:          #16794f;
+  --warn:          #b3690a;
+  --crit:          #b3352a;
+
+  --grid:          #e2eaeb;
+
+  --shadow:        0 1px 2px rgba(11,20,22,.06), 0 8px 24px -12px rgba(11,20,22,.18);
+
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* the display face; overridden for Hebrew, which mono stacks don't cover */
+  --display: var(--mono);
+  --display-track: -.045em;
+
+  --maxw: 1120px;
+  --step--1: clamp(.75rem, .72rem + .12vw, .82rem);
+  --step-0:  clamp(.95rem, .92rem + .16vw, 1.04rem);
+  --step-1:  clamp(1.15rem, 1.08rem + .34vw, 1.4rem);
+  --step-2:  clamp(1.5rem, 1.34rem + .78vw, 2.1rem);
+  --step-3:  clamp(2.1rem, 1.7rem + 1.95vw, 3.6rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:          #090f11;
+    --panel:       #101a1d;
+    --panel-2:     #162225;
+    --rule:        #24363a;
+    --rule-soft:   #1a292c;
+    --ink:         #e2ecee;
+    --ink-2:       #9fb4b9;
+    --ink-3:       #6d868c;
+    --accent:      #3ac7d4;
+    --accent-soft: #10333a;
+    --accent-line: #1e5d67;
+    --series-1:    #12939f;
+    --series-2:    #c8841f;
+    --good:        #35a06f;
+    --warn:        #d29433;
+    --crit:        #e0685a;
+    --grid:        #1b2b2e;
+    --shadow:      0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:          #090f11;
+  --panel:       #101a1d;
+  --panel-2:     #162225;
+  --rule:        #24363a;
+  --rule-soft:   #1a292c;
+  --ink:         #e2ecee;
+  --ink-2:       #9fb4b9;
+  --ink-3:       #6d868c;
+  --accent:      #3ac7d4;
+  --accent-soft: #10333a;
+  --accent-line: #1e5d67;
+  --series-1:    #12939f;
+  --series-2:    #c8841f;
+  --good:        #35a06f;
+  --warn:        #d29433;
+  --crit:        #e0685a;
+  --grid:        #1b2b2e;
+  --shadow:      0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+}
+
+/* Hebrew: mono stacks carry no Hebrew glyphs, so the display face swaps
+   to a Hebrew-capable sans. Latin identifiers keep the mono face. */
+:root[lang="he"] {
+  --sans: "Heebo", "Assistant", "Arial Hebrew", "Noto Sans Hebrew", system-ui, sans-serif;
+  --display: var(--sans);
+  --display-track: -.02em;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { margin: 0; font-weight: 600; text-wrap: balance; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+code, pre, .mono { font-family: var(--mono); font-variant-ligatures: none; }
+
+/* Latin identifiers stay LTR even inside RTL prose */
+.ltr, pre.code, .install-body code, .kv dd, table.data,
+.keyrow .kval, .tile .num, .chart-wrap, .row .nm, .chip, .scope-head .r,
+.ro .k, .ro .v { unicode-bidi: plaintext; }
+pre.code, .install-body code, .chart-wrap, table.data { direction: ltr; }
+
+.wrap { max-width: var(--maxw); margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2.5rem); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: var(--step--1);
+  letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3);
+}
+:root[lang="he"] .eyebrow { font-family: var(--sans); letter-spacing: .08em; }
+
+.lede { color: var(--ink-2); max-width: 62ch; }
+
+.tickrule {
+  height: 13px; border-top: 1px solid var(--rule);
+  background-image: repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 44px);
+  background-size: 44px 6px; background-repeat: repeat-x; opacity: .85;
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+header.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-in { display: flex; align-items: center; gap: 1.5rem; height: 58px; }
+
+.brand { display: flex; align-items: baseline; gap: .55rem; margin-inline-end: auto; }
+.brand b { font-family: var(--mono); font-size: 1.06rem; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+.brand span { font-family: var(--mono); font-size: .68rem; color: var(--ink-3); letter-spacing: .1em; }
+
+.navlinks { display: flex; gap: .3rem; align-items: center; }
+.navlinks a {
+  font-family: var(--mono); font-size: .8rem; letter-spacing: .04em;
+  color: var(--ink-2); padding: .42rem .6rem; border-radius: 3px;
+}
+:root[lang="he"] .navlinks a { font-family: var(--sans); letter-spacing: 0; font-size: .86rem; }
+.navlinks a:hover { color: var(--ink); background: var(--panel); text-decoration: none; }
+.navlinks a.on { color: var(--accent); background: var(--accent-soft); }
+
+.ghost {
+  font-family: var(--mono); font-size: .78rem;
+  border: 1px solid var(--rule); color: var(--ink-2);
+  padding: .38rem .68rem; border-radius: 3px; background: transparent; cursor: pointer;
+}
+.ghost:hover { border-color: var(--accent-line); color: var(--ink); }
+.langbtn { min-width: 62px; }
+
+@media (max-width: 760px) {
+  .navlinks a { padding: .35rem .4rem; font-size: .74rem; }
+  .brand span, .ghost.gh { display: none; }
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero { padding: clamp(3rem, 8vw, 6rem) 0 clamp(2rem, 5vw, 3.5rem); }
+.hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+
+h1.thesis {
+  font-family: var(--display); font-size: var(--step-3); line-height: 1.06;
+  letter-spacing: var(--display-track); font-weight: 600; margin: .9rem 0 1.1rem;
+}
+h1.thesis em { font-style: normal; color: var(--accent); }
+
+.hero-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.6rem; }
+.btn {
+  font-family: var(--mono); font-size: .82rem; letter-spacing: .02em;
+  padding: .6rem 1rem; border-radius: 3px; cursor: pointer; border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: .5rem;
+}
+:root[lang="he"] .btn { font-family: var(--sans); font-size: .88rem; letter-spacing: 0; }
+.btn-primary { background: var(--accent); color: var(--bg); font-weight: 600; }
+.btn-primary:hover { text-decoration: none; filter: brightness(1.08); }
+.btn-quiet { border-color: var(--rule); color: var(--ink-2); background: transparent; }
+.btn-quiet:hover { border-color: var(--accent-line); color: var(--ink); text-decoration: none; }
+
+.install-strip { margin-top: 1.6rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow: hidden; }
+.install-tabs { display: flex; border-bottom: 1px solid var(--rule-soft); }
+.install-tabs button {
+  font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase;
+  background: transparent; border: 0; border-bottom: 2px solid transparent;
+  color: var(--ink-3); padding: .55rem .85rem; cursor: pointer;
+}
+.install-tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+.install-body { display: flex; align-items: center; gap: .75rem; padding: .7rem .85rem; }
+.install-body code { font-size: .8rem; color: var(--ink); overflow-x: auto; white-space: nowrap; flex: 1; }
+.copy {
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase;
+  background: transparent; border: 1px solid var(--rule); color: var(--ink-3);
+  padding: .25rem .5rem; border-radius: 3px; cursor: pointer; flex-shrink: 0;
+}
+.copy:hover { color: var(--accent); border-color: var(--accent-line); }
+
+.scope { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: .55rem; padding: .6rem .85rem; border-bottom: 1px solid var(--rule-soft); background: var(--panel-2); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); flex-shrink: 0; }
+.dot.live { animation: pulse 1.9s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.scope-head .t { font-family: var(--mono); font-size: .74rem; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2); }
+.scope-head .r { margin-inline-start: auto; font-family: var(--mono); font-size: .68rem; color: var(--ink-3); }
+
+#trace { display: block; width: 100%; height: 92px; background: transparent; }
+
+.readouts { border-top: 1px solid var(--rule-soft); }
+.ro { display: grid; grid-template-columns: 1fr auto; gap: .3rem .8rem; padding: .5rem .85rem; border-bottom: 1px solid var(--rule-soft); transition: background .35s ease; }
+.ro:last-child { border-bottom: 0; }
+.ro.hit { background: var(--accent-soft); }
+.ro .k { font-family: var(--mono); font-size: .76rem; letter-spacing: .03em; color: var(--ink-2); }
+.ro .k.word { font-family: var(--sans); letter-spacing: 0; }
+.ro .v { font-family: var(--mono); font-size: .76rem; font-variant-numeric: tabular-nums; color: var(--ink); }
+.meter { grid-column: 1 / -1; height: 3px; background: var(--grid); border-radius: 2px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--series-1); border-radius: 2px; width: 0; transition: width .3s ease; }
+.meter i.amber { background: var(--series-2); }
+
+.scope-foot { padding: .6rem .85rem; border-top: 1px solid var(--rule-soft); font-size: .78rem; color: var(--ink-3); background: var(--panel-2); }
+.scope-foot b { color: var(--ink-2); font-weight: 600; }
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+section { padding: clamp(3rem, 7vw, 5.5rem) 0; }
+.sec-head { margin-bottom: 2.2rem; }
+.sec-head h2 { font-size: var(--step-2); letter-spacing: -.025em; margin: .5rem 0 .7rem; }
+
+.principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; background: var(--panel); }
+.pr { padding: 1.4rem 1.3rem; border-inline-end: 1px solid var(--rule-soft); }
+.pr:last-child { border-inline-end: 0; }
+.pr h3 { font-family: var(--display); font-size: .9rem; letter-spacing: .02em; margin-bottom: .5rem; }
+.pr p { margin: 0; font-size: .87rem; color: var(--ink-2); line-height: 1.55; }
+@media (max-width: 780px) { .pr { border-inline-end: 0; border-bottom: 1px solid var(--rule-soft); } .pr:last-child { border-bottom: 0; } }
+
+.rows { border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; background: var(--panel); }
+.row {
+  display: grid; grid-template-columns: 12px 190px 1fr 92px; gap: 1rem; align-items: center;
+  width: 100%; text-align: start; padding: .85rem 1rem; background: transparent; border: 0;
+  border-bottom: 1px solid var(--rule-soft); cursor: pointer; color: inherit; font: inherit;
+}
+.row:last-child { border-bottom: 0; }
+.row:hover { background: var(--panel-2); }
+.row .nm { font-family: var(--mono); font-size: .86rem; color: var(--ink); letter-spacing: -.01em; }
+.row .ds { font-size: .85rem; color: var(--ink-2); line-height: 1.45; }
+.row .pf { font-family: var(--mono); font-size: .66rem; letter-spacing: .08em; color: var(--ink-3); text-align: end; text-transform: uppercase; }
+:root[lang="he"] .row .pf { font-family: var(--sans); letter-spacing: 0; font-size: .72rem; text-transform: none; }
+.row .sd { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-line); }
+@media (max-width: 820px) {
+  .row { grid-template-columns: 12px 1fr; row-gap: .3rem; }
+  .row .pf { grid-column: 2; text-align: start; }
+}
+
+pre.code {
+  margin: 0; padding: .95rem 1.05rem; overflow-x: auto;
+  background: var(--panel-2); border: 1px solid var(--rule); border-radius: 4px;
+  font-size: .8rem; line-height: 1.65; color: var(--ink); text-align: left;
+}
+pre.code .c { color: var(--ink-3); }
+pre.code .k { color: var(--accent); }
+pre.code .s { color: var(--series-2); }
+
+.codehead { display: flex; align-items: center; gap: .6rem; margin-bottom: .55rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+:root[lang="he"] .codehead { font-family: var(--sans); letter-spacing: 0; font-size: .78rem; text-transform: none; }
+
+.detail-top { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+@media (max-width: 900px) { .detail-top { grid-template-columns: 1fr; } }
+.back { font-family: var(--mono); font-size: .76rem; color: var(--ink-3); background: transparent; border: 0; cursor: pointer; padding: 0; margin-bottom: 1.2rem; }
+:root[lang="he"] .back { font-family: var(--sans); font-size: .84rem; }
+.back:hover { color: var(--accent); }
+
+.kv { border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; background: var(--panel); }
+.kv div { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem .85rem; border-bottom: 1px solid var(--rule-soft); font-family: var(--mono); font-size: .76rem; }
+.kv div:last-child { border-bottom: 0; }
+.kv dt { color: var(--ink-3); }
+:root[lang="he"] .kv dt { font-family: var(--sans); font-size: .82rem; }
+.kv dd { margin: 0; color: var(--ink); text-align: end; }
+
+.signals { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1rem; }
+.chip { font-family: var(--mono); font-size: .7rem; letter-spacing: .04em; border: 1px solid var(--rule); color: var(--ink-2); padding: .25rem .55rem; border-radius: 3px; background: var(--panel); }
+
+.pad { position: relative; height: 168px; border: 1px dashed var(--accent-line); border-radius: 4px; background: var(--panel-2); display: grid; place-items: center; cursor: pointer; user-select: none; overflow: hidden; }
+.pad p { margin: 0; font-family: var(--mono); font-size: .78rem; color: var(--ink-3); text-align: center; padding: 0 1rem; }
+:root[lang="he"] .pad p { font-family: var(--sans); font-size: .86rem; }
+.ripple { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--series-2); opacity: .55; transform: translate(-50%,-50%); pointer-events: none; }
+
+/* ============================================================
+   PREMIUM / DASHBOARD
+   ============================================================ */
+.badge { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; border: 1px solid var(--accent-line); color: var(--accent); background: var(--accent-soft); padding: .25rem .55rem; border-radius: 3px; }
+:root[lang="he"] .badge { font-family: var(--sans); letter-spacing: 0; font-size: .76rem; text-transform: none; }
+
+.dash { border: 1px solid var(--rule); border-radius: 5px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+.dash-bar { display: flex; align-items: center; gap: .7rem; padding: .65rem .9rem; border-bottom: 1px solid var(--rule-soft); background: var(--panel-2); flex-wrap: wrap; }
+.dash-bar .app { font-family: var(--mono); font-size: .78rem; color: var(--ink); }
+.dash-bar .sep { color: var(--ink-3); }
+.seg { display: flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; margin-inline-start: auto; }
+.seg button { font-family: var(--mono); font-size: .7rem; background: transparent; border: 0; color: var(--ink-3); padding: .3rem .6rem; cursor: pointer; }
+.seg button.on { background: var(--accent-soft); color: var(--accent); }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); border-bottom: 1px solid var(--rule-soft); }
+.tile { padding: .95rem 1rem; border-inline-end: 1px solid var(--rule-soft); }
+.tile:last-child { border-inline-end: 0; }
+.tile .lab { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+:root[lang="he"] .tile .lab { font-family: var(--sans); letter-spacing: 0; font-size: .78rem; text-transform: none; }
+.tile .num { font-family: var(--mono); font-size: 1.55rem; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-top: .25rem; }
+.tile .delta { font-family: var(--mono); font-size: .72rem; display: flex; align-items: center; gap: .3rem; margin-top: .1rem; }
+:root[lang="he"] .tile .delta { font-family: var(--sans); font-size: .78rem; }
+.up { color: var(--good); } .down { color: var(--crit); } .flat { color: var(--ink-3); }
+
+.charts { display: grid; grid-template-columns: 1.35fr 1fr; }
+@media (max-width: 880px) { .charts { grid-template-columns: 1fr; } }
+.chart { padding: 1.1rem 1.1rem 1.2rem; border-inline-end: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft); }
+.chart:nth-child(even) { border-inline-end: 0; }
+.chart h4 { font-size: .9rem; margin-bottom: .15rem; }
+.chart .sub { font-size: .76rem; color: var(--ink-3); margin-bottom: .9rem; }
+.legend { display: flex; gap: 1rem; margin-bottom: .7rem; flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: .38rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-2); }
+:root[lang="he"] .legend span { font-family: var(--sans); font-size: .8rem; }
+.swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+.chart-wrap { position: relative; overflow-x: auto; }
+svg.plot { display: block; width: 100%; height: auto; overflow: visible; }
+.tip { position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s; background: var(--panel-2); border: 1px solid var(--rule); border-radius: 3px; padding: .4rem .55rem; font-family: var(--mono); font-size: .72rem; color: var(--ink); box-shadow: var(--shadow); white-space: nowrap; z-index: 5; }
+.tip.on { opacity: 1; }
+.tip .tk { color: var(--ink-3); }
+
+table.data { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: .74rem; margin-top: .8rem; }
+table.data th, table.data td { text-align: right; padding: .3rem .5rem; border-bottom: 1px solid var(--rule-soft); font-variant-numeric: tabular-nums; }
+table.data th:first-child, table.data td:first-child { text-align: left; }
+table.data th { color: var(--ink-3); font-weight: 500; }
+.toggle-data { font-family: var(--mono); font-size: .7rem; background: transparent; border: 0; color: var(--ink-3); cursor: pointer; padding: .3rem 0; text-decoration: underline; }
+:root[lang="he"] .toggle-data { font-family: var(--sans); font-size: .78rem; }
+.toggle-data:hover { color: var(--accent); }
+
+.keyrow { display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: center; padding: .75rem .9rem; border-bottom: 1px solid var(--rule-soft); }
+.keyrow:last-child { border-bottom: 0; }
+.keyrow .kname { font-family: var(--mono); font-size: .82rem; }
+.keyrow .kval { font-family: var(--mono); font-size: .74rem; color: var(--ink-3); }
+.keyrow .kmeta { font-family: var(--mono); font-size: .7rem; color: var(--ink-3); }
+:root[lang="he"] .keyrow .kmeta { font-family: var(--sans); font-size: .78rem; }
+.pill { font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; padding: .18rem .45rem; border-radius: 3px; border: 1px solid; }
+:root[lang="he"] .pill { font-family: var(--sans); letter-spacing: 0; font-size: .74rem; text-transform: none; }
+.pill.live { color: var(--good); border-color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+.pill.test { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+@media (max-width: 700px) { .keyrow { grid-template-columns: 1fr; row-gap: .3rem; } }
+
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; background: var(--panel); }
+.plan { padding: 1.4rem 1.3rem; border-inline-end: 1px solid var(--rule-soft); }
+.plan:last-child { border-inline-end: 0; }
+.plan.hi { background: var(--panel-2); }
+.plan h3 { font-family: var(--mono); font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+:root[lang="he"] .plan h3 { font-family: var(--sans); letter-spacing: 0; font-size: .9rem; text-transform: none; }
+.plan .price { font-family: var(--display); font-size: 1.9rem; letter-spacing: -.03em; margin: .5rem 0 .1rem; }
+.plan .price small { font-size: .8rem; color: var(--ink-3); letter-spacing: 0; }
+.plan ul { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .45rem; }
+.plan li { font-size: .84rem; color: var(--ink-2); display: flex; gap: .5rem; align-items: flex-start; }
+.plan li::before { content: "—"; color: var(--accent); flex-shrink: 0; }
+@media (max-width: 780px) { .plan { border-inline-end: 0; border-bottom: 1px solid var(--rule-soft); } .plan:last-child { border-bottom: 0; } }
+
+.waitlist { display: flex; gap: .5rem; margin-top: 1.2rem; flex-wrap: wrap; }
+.waitlist input { flex: 1; min-width: 200px; font-family: var(--mono); font-size: .82rem; padding: .58rem .75rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--panel-2); color: var(--ink); }
+.waitlist input::placeholder { color: var(--ink-3); }
+
+.note { border-inline-start: 2px solid var(--accent); padding-inline-start: .9rem; padding-block: .1rem; color: var(--ink-2); font-size: .88rem; margin-top: 1.2rem; }
+
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem,4vw,3rem); }
+@media (max-width: 820px) { .about-grid { grid-template-columns: 1fr; } }
+.about-grid p { color: var(--ink-2); }
+
+.feature-pair { display: grid; grid-template-columns: .85fr 1.15fr; gap: 1.4rem; align-items: start; }
+@media (max-width: 860px) { .feature-pair { grid-template-columns: 1fr; } }
+
+footer.ft { border-top: 1px solid var(--rule); padding: 2rem 0 3rem; margin-top: 2rem; }
+.ft-in { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; font-family: var(--mono); font-size: .74rem; color: var(--ink-3); }
+:root[lang="he"] .ft-in { font-family: var(--sans); font-size: .82rem; }
+.ft-in a { color: var(--ink-2); }
+.ft-push { margin-inline-start: auto; }
+
+/* ============================================================
+   PHONE DEMOS
+   ============================================================ */
+.demo { display: grid; grid-template-columns: 268px 1fr; gap: clamp(1.4rem, 4vw, 2.6rem); align-items: start; }
+@media (max-width: 780px) { .demo { grid-template-columns: 1fr; justify-items: center; } .demo .demo-side { width: 100%; } }
+
+.phone {
+  width: 268px; aspect-ratio: 9 / 19; position: relative; flex-shrink: 0;
+  border-radius: 38px; padding: 9px;
+  background: linear-gradient(160deg, var(--rule) 0%, var(--rule-soft) 45%, var(--rule) 100%);
+  box-shadow: var(--shadow), 0 0 0 1px var(--rule) inset;
+  direction: ltr;
+}
+.screen {
+  position: absolute; inset: 9px; border-radius: 30px; overflow: hidden;
+  background: var(--panel-2); display: flex; flex-direction: column;
+}
+.island {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  width: 74px; height: 20px; border-radius: 12px; background: var(--ink);
+  opacity: .88; z-index: 6; pointer-events: none;
+}
+.statusbar {
+  height: 40px; flex-shrink: 0; display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0 16px 5px; font-family: var(--mono); font-size: .6rem; color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.appbar {
+  padding: .5rem .9rem; border-bottom: 1px solid var(--rule-soft);
+  font-size: .78rem; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: .5rem;
+}
+.appbody { flex: 1; padding: .8rem .9rem; overflow: hidden; position: relative; font-size: .72rem; }
+
+.fakebtn {
+  display: block; width: 100%; border: 0; border-radius: 8px; cursor: pointer;
+  background: var(--accent); color: var(--panel-2); font-weight: 600;
+  font-size: .74rem; padding: .6rem; font-family: inherit;
+}
+.fakebtn.ghost { background: transparent; color: var(--ink-2); border: 1px solid var(--rule); }
+.fakebtn:active { transform: scale(.98); }
+
+.fakefield {
+  border: 1px solid var(--rule); border-radius: 7px; padding: .42rem .55rem;
+  font-size: .7rem; color: var(--ink); background: var(--panel); margin-bottom: .45rem;
+  display: flex; align-items: center; justify-content: space-between; gap: .4rem; min-height: 30px;
+}
+.fakefield.act { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.fakefield.bad { border-color: var(--series-2); }
+.fakefield .lb { font-size: .58rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+
+.tapdot { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: var(--series-2); opacity: .3; transform: translate(-50%,-50%); pointer-events: none; }
+.reach { position: absolute; inset: 0; pointer-events: none; }
+
+.demo-side { display: grid; gap: .9rem; }
+.demo-verdict {
+  border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow: hidden;
+}
+.demo-verdict .vh {
+  padding: .5rem .8rem; border-bottom: 1px solid var(--rule-soft); background: var(--panel-2);
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3);
+}
+:root[lang="he"] .demo-verdict .vh { font-family: var(--sans); letter-spacing: 0; font-size: .78rem; text-transform: none; }
+.verdict-main { padding: .8rem; display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+.verdict-main b { font-family: var(--mono); font-size: 1rem; color: var(--accent); letter-spacing: -.01em; }
+.verdict-main span { font-family: var(--mono); font-size: .74rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.evidence { border-top: 1px solid var(--rule-soft); padding: .55rem .8rem; display: grid; gap: .3rem; }
+.evidence div { display: flex; justify-content: space-between; gap: .8rem; font-family: var(--mono); font-size: .7rem; }
+.evidence dt { color: var(--ink-3); }
+.evidence dd { margin: 0; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.demo-ctl { display: flex; gap: .4rem; flex-wrap: wrap; }
+.demo-ctl button {
+  font-family: var(--mono); font-size: .7rem; padding: .32rem .6rem; border-radius: 3px;
+  border: 1px solid var(--rule); background: transparent; color: var(--ink-2); cursor: pointer;
+}
+:root[lang="he"] .demo-ctl button { font-family: var(--sans); font-size: .78rem; }
+.demo-ctl button:hover { border-color: var(--accent-line); color: var(--ink); }
+.demo-ctl button.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+
+.hint { font-size: .76rem; color: var(--ink-3); }
+
+/* full signal roster — every signal the SDK can emit, lit when it fires */
+.siglist { border-top: 1px solid var(--rule-soft); padding: .5rem .8rem .65rem; display: grid; gap: .3rem; }
+.sig { display: grid; grid-template-columns: 1fr auto; gap: .2rem .6rem; align-items: center; opacity: .42; transition: opacity .25s; }
+.sig.on { opacity: 1; }
+.sig .sn { font-family: var(--mono); font-size: .67rem; color: var(--ink-2); letter-spacing: .01em; }
+.sig.on .sn { color: var(--accent); }
+.sig .sv { font-family: var(--mono); font-size: .65rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.sig .sb { grid-column: 1 / -1; height: 2px; background: var(--grid); border-radius: 2px; overflow: hidden; }
+.sig .sb i { display: block; height: 100%; width: 0; background: var(--series-2); border-radius: 2px; transition: width .35s ease; }
+
+/* real, typeable inputs inside the phone */
+.fakeinput {
+  width: 100%; border: 1px solid var(--rule); border-radius: 7px;
+  padding: .45rem .55rem; font-size: .74rem; font-family: var(--mono);
+  background: var(--panel); color: var(--ink); direction: ltr;
+  font-variant-numeric: tabular-nums;
+}
+.fakeinput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.fakeinput::placeholder { color: var(--ink-3); }
+
+.ptabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule-soft); }
+.ptabs button {
+  flex: 1; background: transparent; border: 0; border-bottom: 2px solid transparent;
+  padding: .4rem 0; font-size: .68rem; color: var(--ink-3); cursor: pointer; font-family: inherit;
+}
+.ptabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+.scroller { max-height: 76px; overflow-y: auto; display: grid; gap: 4px; padding-inline-end: 2px; }
+.scroller::-webkit-scrollbar { width: 3px; }
+.scroller::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+.chip-drag {
+  display: inline-flex; align-items: center; gap: .3rem; cursor: grab; touch-action: none;
+  background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--accent);
+  border-radius: 6px; padding: .25rem .5rem; font-size: .64rem; font-family: var(--mono); user-select: none;
+}
+.chip-drag:active { cursor: grabbing; }
+.dropzone {
+  border: 1px dashed var(--rule); border-radius: 6px; min-height: 30px;
+  display: grid; place-items: center; font-size: .6rem; color: var(--ink-3);
+}
+.dropzone.hot { border-color: var(--accent); background: var(--accent-soft); }
+
+.backbtn { background: transparent; border: 0; color: var(--ink-2); cursor: pointer; font-size: .9rem; padding: 0 .2rem; line-height: 1; }
+
+/* mini layouts used by adaptive-ui */
+.mini { display: grid; gap: 5px; }
+.mini.grid { grid-template-columns: 1fr 1fr; }
+.mini.list { grid-template-columns: 1fr; }
+.mini.cards { grid-template-columns: 1fr; }
+.mini.carousel { grid-auto-flow: column; grid-auto-columns: 62%; overflow: hidden; }
+.mcell { background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 6px; height: 42px; display: flex; align-items: center; padding: 0 .4rem; gap: .35rem; }
+.mini.cards .mcell { height: 58px; }
+.mini.list .mcell { height: 28px; }
+.mthumb { width: 22px; height: 22px; border-radius: 4px; background: var(--accent-soft); flex-shrink: 0; }
+.mline { height: 5px; border-radius: 3px; background: var(--grid); flex: 1; }
+
+.wbar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.wbar i { display: block; height: 100%; background: var(--series-1); border-radius: 3px; transition: width .5s ease; }
+
+.rv { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+.rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rv { opacity: 1; transform: none; transition: none; }
+  .dot.live { animation: none; }
+}
+
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#/" style="text-decoration:none"><b>rgkit</b><span>v0.1.0</span></a>
+    <nav class="navlinks">
+      <a href="#/android" data-nav="android" data-t="nav.android">android</a>
+      <a href="#/ios" data-nav="ios" data-t="nav.ios">ios</a>
+      <a href="#/premium" data-nav="premium" data-t="nav.premium">premium</a>
+      <a href="#/about" data-nav="about" data-t="nav.about">about</a>
+    </nav>
+    <button class="ghost langbtn" id="langbtn">עברית</button>
+    <button class="ghost gh" id="ghlink">github ↗</button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<footer class="ft">
+  <div class="wrap ft-in">
+    <span id="ft-tag">rgkit — 13 local-first mobile SDKs</span>
+    <span class="ft-push">io.github.rongo270</span>
+    <a href="#/premium" data-t="nav.premium">premium</a>
+    <a href="#/about" data-t="nav.about">about</a>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   i18n — prose translates; identifiers, coordinates and API
+   constants deliberately stay English + LTR
+   ============================================================ */
+const STR = {
+  en: {
+    dir:"ltr",
+    "nav.android":"android", "nav.ios":"ios", "nav.premium":"premium", "nav.about":"about",
+    "nav.github":"github ↗", "nav.lang":"עברית",
+    fwd:"→", back:"←",
+    "ft.tag":"rgkit — 13 local-first mobile SDKs",
+
+    "hero.eyebrow":"13 SDKs · Android + iOS · Apache 2.0",
+    "hero.h1":"Read the user.<br>Ship nothing<br><em>off the device.</em>",
+    "hero.lede":"Behavioural SDKs that infer intent, context, friction and rhythm entirely on-device. No backend. No API key. No account. Every inference carries a confidence score and the evidence behind it — and returns nothing rather than guessing.",
+    "hero.cta1":"Browse the catalog", "hero.cta2":"See premium",
+    "hero.live":"intent-engine · live",
+    "hero.fr":"frustration score",
+    "hero.foot":"This panel is running the same heuristics on <b>you</b>, right now — move, pause, click fast. Nothing here leaves your browser, which is exactly the point.",
+
+    "pr.eyebrow":"Shared shape", "pr.h2":"Four rules every SDK keeps",
+    "pr.lede":"Same contract across all 13, so the second one you adopt costs nothing to learn.",
+    "pr.1t":"Nothing to connect", "pr.1b":"No backend, no key, no account. Learning and storage happen on-device in a small JSON file.",
+    "pr.2t":"One-line init",      "pr.2b":"<code>Xxx.init(this)</code> in <code>onCreate</code>. Lifecycle, touch and window hooks wire themselves.",
+    "pr.3t":"Honest heuristics",  "pr.3b":"Every inference carries a confidence and its evidence — and returns null rather than guessing.",
+    "pr.4t":"Same surface",       "pr.4b":"Thread-safe singletons, main-thread listeners, <code>exportJson()</code> and <code>reset()</code> on all 13.",
+
+    "cl.eyebrow":"A closer look", "cl.h2":"Three of them, in full",
+    "cl.lede":"One line to install, a handful to use. Tap any row for the rest.",
+    "cl.open":"Open",
+
+    "pm.eyebrow":"Coming next", "pm.h2":"Premium — the same data, rolled up",
+    "pm.lede":"The free SDKs stay local forever. Premium is an opt-in module that uploads <em>aggregates only</em> — so you can see across your install base what each device already knows about itself.",
+    "pm.cta":"Premium overview",
+
+    "cat.androidH":"Android SDKs", "cat.iosH":"iOS SDKs",
+    "cat.androidLede":"All 13 publish to Maven Central. Kotlin, minSdk 24, zero permissions, zero dependencies unless noted.",
+    "cat.iosLede":"Two SDKs ship for iOS today, as products of one Swift package. iOS 15+ / macOS 13+, no dependencies.",
+    "cat.iosNote":"SPM reads a manifest only from the repository root, so both iOS SDKs are products of the root <code>Package.swift</code> — add the repo once, pick the products you want.",
+
+    "d.back":"all SDKs", "d.group":"group", "d.artifact":"artifact", "d.version":"version",
+    "d.package":"package", "d.minsdk":"min sdk", "d.perms":"permissions", "d.none":"none",
+    "d.tryit":"try it — tap fast, then hold still", "d.tap":"tap here repeatedly",
+    "d.taps":"tap(s) in window — keep going",
+    "d.running":"running live — this is the SDK's logic, not a video",
+    "d.install":"install", "d.every":"on every SDK",
+    "d.planned":"premium · planned", "d.seedash":"See what the dashboard looks like",
+
+    "p.badge":"not built yet", "p.h2":"Premium",
+    "p.lede":"Everything below is a mock. No backend exists, no data is collected, and the free SDKs will never require it. Premium would be a separate opt-in module — the 13 free SDKs stay dependency-free and offline.",
+    "p.access":"Access", "p.keys":"API keys",
+    "p.keysLede":"One key per app and environment. The SDK sends aggregates on a schedule — never raw events, never per-user rows.",
+    "p.key":"Key", "p.env":"Env", "p.used":"Last used",
+    "p.live":"live", "p.test":"test",
+    "p.ago2":"2 min ago", "p.yest":"yesterday", "p.ago14":"14 min ago",
+    "p.optin":"opt in, per SDK",
+    "p.consent":"Consent is required before a single byte leaves the device, and the SDK uploads aggregates on a schedule — not an event stream.",
+    "p.ifships":"If it ships", "p.tiers":"Shape of the tiers",
+    "p.t1":"Local", "p.t2":"Team", "p.t3":"Scale",
+    "p.free":"Free", "p.forever":" · forever", "p.tbd":"TBD",
+    "p.perapp":" / app / mo", "p.permo":" / mo",
+    "p.t1a":"All 13 SDKs, both platforms", "p.t1b":"Everything on-device",
+    "p.t1c":"exportJson() — your data, your pipeline", "p.t1d":"Apache 2.0",
+    "p.t2a":"Aggregates across your install base", "p.t2b":"Dashboards for all 13 SDKs",
+    "p.t2c":"90-day retention", "p.t2d":"Release-over-release comparison",
+    "p.t3a":"Raw aggregate export + API", "p.t3b":"Cohorts and device-tier splits",
+    "p.t3c":"Longer retention", "p.t3d":"SSO",
+    "p.want":"Want it? Say so and it gets built sooner.",
+    "p.email":"you@studio.com", "p.request":"Request early access",
+    "p.sent":"Noted — this demo stores nothing, so nothing was sent.",
+
+    "dash.env":"production · 41,208 installs",
+    "dash.t1":"Frustration score", "dash.t2":"Rage-quit exits",
+    "dash.t3":"Median felt TTI", "dash.t4":"Churn risk > 0.7",
+    "dash.d1":"▼ 43% vs prev 30d", "dash.d2":"▼ 1.8 pts",
+    "dash.d3":"— unchanged", "dash.d4":"▲ 212 users",
+    "dash.c1":"Frustration score", "dash.c1s":"intent-engine · daily median, last 30 days",
+    "dash.c2":"Where sessions end", "dash.c2s":"exit-reason · share of sessions",
+    "dash.c3":"Rage taps vs hesitation", "dash.c3s":"intent-engine · events per 1k sessions",
+    "dash.c4":"When your users are reachable", "dash.c4s":"rhythm-engine · 12 weeks, share active",
+    "dash.rage":"Rage taps", "dash.hes":"Hesitation",
+    "dash.show":"Show data", "dash.hide":"Hide data",
+    "dash.day":"Day", "dash.score":"Score", "dash.rows":"…30 rows",
+    "dash.week":"week", "dash.active":"active",
+    days:["M","T","W","T","F","S","S"],
+
+    "a.eyebrow":"About", "a.h2":"Why these exist",
+    "a.p1":"Mobile analytics usually means shipping every tap to someone else's server, then waiting a day to learn that users are unhappy — without ever learning <em>why</em>.",
+    "a.p2":"rgkit inverts that. The phone already holds every signal you need: how hard someone taps, how long they hesitate, which thumb they hold it with, whether they're driving, and whether they left because they finished or because they gave up. That inference can happen where the data already is.",
+    "a.p3":"So all 13 SDKs run entirely on-device. No backend, no key, no account, no permission prompts. You get a verdict with a confidence score and the evidence behind it — and when the evidence is thin, you get nothing at all rather than a confident guess.",
+    "a.sdks":"SDKs", "a.plats":"Platforms", "a.amin":"Android min", "a.imin":"iOS min",
+    "a.lic":"Licence", "a.ver":"Version", "a.grp":"Group", "a.pkgs":"Packages",
+    "a.note":"Built by Rongo. Every SDK is Apache 2.0 — use them in commercial apps, fork them, copy a single file into your source tree. The install instructions in each README cover all three."
+  },
+
+  he: {
+    dir:"rtl",
+    "nav.android":"אנדרואיד", "nav.ios":"iOS", "nav.premium":"פרימיום", "nav.about":"אודות",
+    "nav.github":"‏github ↗", "nav.lang":"English",
+    fwd:"←", back:"→",
+    "ft.tag":"‏rgkit — 13 ערכות מובייל שרצות על המכשיר",
+
+    "hero.eyebrow":"‏13 ערכות · אנדרואיד + iOS · רישיון Apache 2.0",
+    "hero.h1":"לקרוא את המשתמש.<br>בלי לשלוח דבר<br><em>מחוץ למכשיר.</em>",
+    "hero.lede":"ערכות פיתוח שמזהות כוונה, הקשר, חיכוך וקצב — הכול על המכשיר עצמו. בלי שרת. בלי מפתח API. בלי חשבון. לכל מסקנה יש ציון ביטחון והראיות שהובילו אליה — וכשאין מספיק נתונים, היא מחזירה כלום במקום לנחש.",
+    "hero.cta1":"לקטלוג המלא", "hero.cta2":"לגרסת הפרימיום",
+    "hero.live":"‏intent-engine · חי",
+    "hero.fr":"ציון תסכול",
+    "hero.foot":"הלוח הזה מריץ <b>עליכם</b> את אותן היוריסטיקות בדיוק, ממש עכשיו — הזיזו את העכבר, עצרו, לחצו מהר. שום דבר מכאן לא עוזב את הדפדפן, וזו בדיוק הנקודה.",
+
+    "pr.eyebrow":"מבנה משותף", "pr.h2":"ארבעה כללים שכל ערכה שומרת",
+    "pr.lede":"אותו חוזה בכל 13 הערכות — כך שהערכה השנייה שתאמצו לא תדרוש ללמוד שום דבר מחדש.",
+    "pr.1t":"אין למה להתחבר", "pr.1b":"בלי שרת, בלי מפתח, בלי חשבון. הלמידה והאחסון קורים על המכשיר, בקובץ JSON קטן.",
+    "pr.2t":"אתחול בשורה אחת",  "pr.2b":"‏<code>Xxx.init(this)</code> בתוך <code>onCreate</code>. חיבורי מחזור־חיים, מגע וחלון מתחברים לבד.",
+    "pr.3t":"היוריסטיקות ישרות","pr.3b":"לכל מסקנה יש ציון ביטחון והראיות שלה — וכשאין די נתונים היא מחזירה null במקום לנחש.",
+    "pr.4t":"אותו ממשק",       "pr.4b":"סינגלטונים בטוחים לשרשור, מאזינים על הת׳רד הראשי, ו־<code>exportJson()</code> ו־<code>reset()</code> בכל 13.",
+
+    "cl.eyebrow":"מקרוב", "cl.h2":"שלוש מהן, במלואן",
+    "cl.lede":"שורה אחת להתקנה, כמה שורות לשימוש. לחצו על כל שורה כדי לראות את השאר.",
+    "cl.open":"פתחו את",
+
+    "pm.eyebrow":"בקרוב", "pm.h2":"פרימיום — אותם נתונים, במבט־על",
+    "pm.lede":"הערכות החינמיות נשארות מקומיות לתמיד. פרימיום הוא מודול נפרד שמצטרפים אליו מרצון, ומעלה <em>נתונים מצרפיים בלבד</em> — כדי שתוכלו לראות על פני כל ההתקנות מה כל מכשיר כבר יודע על עצמו.",
+    "pm.cta":"סקירת פרימיום",
+
+    "cat.androidH":"ערכות אנדרואיד", "cat.iosH":"ערכות iOS",
+    "cat.androidLede":"כל 13 מתפרסמות ל־Maven Central. קוטלין, minSdk 24, בלי הרשאות ובלי תלויות אלא אם צוין אחרת.",
+    "cat.iosLede":"שתי ערכות זמינות ל־iOS כיום, כמוצרים של חבילת Swift אחת. ‏iOS 15+ / macOS 13+, בלי תלויות.",
+    "cat.iosNote":"‏SPM קורא מניפסט רק משורש המאגר, ולכן שתי ערכות ה־iOS הן מוצרים של <code>Package.swift</code> שבשורש — מוסיפים את המאגר פעם אחת ובוחרים את המוצרים.",
+
+    "d.back":"כל הערכות", "d.group":"קבוצה", "d.artifact":"ארטיפקט", "d.version":"גרסה",
+    "d.package":"חבילה", "d.minsdk":"גרסת מינימום", "d.perms":"הרשאות", "d.none":"ללא",
+    "d.tryit":"נסו — לחצו מהר, ואז עצרו", "d.tap":"לחצו כאן שוב ושוב",
+    "d.taps":"לחיצות בחלון — תמשיכו",
+    "d.running":"רץ עכשיו — זו הלוגיקה של הערכה, לא סרטון",
+    "d.install":"התקנה", "d.every":"בכל הערכות",
+    "d.planned":"פרימיום · מתוכנן", "d.seedash":"לראות איך הדשבורד נראה",
+
+    "p.badge":"עוד לא נבנה", "p.h2":"פרימיום",
+    "p.lede":"כל מה שלמטה הוא הדמיה. אין שרת, לא נאסף שום מידע, והערכות החינמיות לעולם לא ידרשו אותו. פרימיום יהיה מודול נפרד בהצטרפות מרצון — 13 הערכות החינמיות נשארות בלי תלויות ובלי חיבור לרשת.",
+    "p.access":"גישה", "p.keys":"מפתחות API",
+    "p.keysLede":"מפתח אחד לכל אפליקציה וסביבה. הערכה שולחת נתונים מצרפיים לפי לוח זמנים — לעולם לא אירועים גולמיים ולא שורות פר־משתמש.",
+    "p.key":"מפתח", "p.env":"סביבה", "p.used":"שימוש אחרון",
+    "p.live":"חי", "p.test":"בדיקה",
+    "p.ago2":"לפני 2 דק׳", "p.yest":"אתמול", "p.ago14":"לפני 14 דק׳",
+    "p.optin":"הצטרפות מרצון, לכל ערכה",
+    "p.consent":"נדרשת הסכמה לפני שבייט אחד עוזב את המכשיר, והערכה מעלה נתונים מצרפיים לפי לוח זמנים — לא זרם אירועים.",
+    "p.ifships":"אם זה יֵצא לדרך", "p.tiers":"מבנה המסלולים",
+    "p.t1":"מקומי", "p.t2":"צוות", "p.t3":"סקייל",
+    "p.free":"חינם", "p.forever":" · לתמיד", "p.tbd":"ייקבע",
+    "p.perapp":" / אפליקציה / חודש", "p.permo":" / חודש",
+    "p.t1a":"כל 13 הערכות, בשתי הפלטפורמות", "p.t1b":"הכול על המכשיר",
+    "p.t1c":"‏exportJson() — הנתונים שלכם, הצינור שלכם", "p.t1d":"רישיון Apache 2.0",
+    "p.t2a":"נתונים מצרפיים על פני כל ההתקנות", "p.t2b":"דשבורדים לכל 13 הערכות",
+    "p.t2c":"שמירת נתונים ל־90 יום", "p.t2d":"השוואה בין גרסאות",
+    "p.t3a":"ייצוא נתונים מצרפיים + API", "p.t3b":"פילוח לפי קבוצות ורמות מכשיר",
+    "p.t3c":"שמירת נתונים ארוכה יותר", "p.t3d":"‏SSO",
+    "p.want":"רוצים את זה? תגידו, וזה ייבנה מוקדם יותר.",
+    "p.email":"you@studio.com", "p.request":"בקשת גישה מוקדמת",
+    "p.sent":"נרשם — ההדמיה הזו לא שומרת כלום, ולכן שום דבר לא נשלח.",
+
+    "dash.env":"פרודקשן · 41,208 התקנות",
+    "dash.t1":"ציון תסכול", "dash.t2":"יציאות מתוך תסכול",
+    "dash.t3":"חציון TTI מורגש", "dash.t4":"סיכון נטישה מעל 0.7",
+    "dash.d1":"▼ 43% מול 30 הימים הקודמים", "dash.d2":"▼ 1.8 נק׳",
+    "dash.d3":"— ללא שינוי", "dash.d4":"▲ 212 משתמשים",
+    "dash.c1":"ציון תסכול", "dash.c1s":"‏intent-engine · חציון יומי, 30 הימים האחרונים",
+    "dash.c2":"איפה הסשנים נגמרים", "dash.c2s":"‏exit-reason · נתח מהסשנים",
+    "dash.c3":"נקישות זעם מול היסוס", "dash.c3s":"‏intent-engine · אירועים לכל 1000 סשנים",
+    "dash.c4":"מתי המשתמשים שלכם זמינים", "dash.c4s":"‏rhythm-engine · 12 שבועות, נתח פעילים",
+    "dash.rage":"נקישות זעם", "dash.hes":"היסוס",
+    "dash.show":"הצג נתונים", "dash.hide":"הסתר נתונים",
+    "dash.day":"יום", "dash.score":"ציון", "dash.rows":"…30 שורות",
+    "dash.week":"שבוע", "dash.active":"פעילים",
+    days:["א","ב","ג","ד","ה","ו","ש"],
+
+    "a.eyebrow":"אודות", "a.h2":"למה זה קיים",
+    "a.p1":"אנליטיקה במובייל פירושה בדרך כלל לשלוח כל נגיעה לשרת של מישהו אחר, ואז לחכות יום כדי לגלות שהמשתמשים לא מרוצים — בלי לדעת אף פעם <em>למה</em>.",
+    "a.p2":"‏rgkit הופך את זה. הטלפון כבר מחזיק כל אות שצריך: כמה חזק מישהו לוחץ, כמה זמן הוא מהסס, באיזו יד הוא מחזיק, אם הוא נוהג, ואם הוא יצא כי סיים או כי ויתר. ההסקה יכולה לקרות בדיוק במקום שבו הנתונים כבר נמצאים.",
+    "a.p3":"לכן כל 13 הערכות רצות לגמרי על המכשיר. בלי שרת, בלי מפתח, בלי חשבון, בלי בקשות הרשאה. מקבלים הכרעה עם ציון ביטחון והראיות מאחוריה — וכשהראיות דלות, מקבלים כלום במקום ניחוש בטוח.",
+    "a.sdks":"ערכות", "a.plats":"פלטפורמות", "a.amin":"מינימום אנדרואיד", "a.imin":"מינימום iOS",
+    "a.lic":"רישיון", "a.ver":"גרסה", "a.grp":"קבוצה", "a.pkgs":"חבילות",
+    "a.note":"נבנה על ידי Rongo. כל ערכה תחת רישיון Apache 2.0 — אפשר להשתמש בהן באפליקציות מסחריות, לפצל אותן, או להעתיק קובץ בודד לעץ הקוד. הוראות ההתקנה בכל README מכסות את שלוש הדרכים."
+  }
+};
+
+let LANG = (localStorage.getItem("rgkit.lang") === "he") ? "he" : "en";
+const t = k => (STR[LANG][k] !== undefined ? STR[LANG][k] : STR.en[k]);
+
+/* ============================================================
+   DATA — coordinates and API are real; prose is bilingual
+   ============================================================ */
+const SDKS = [
+  { id:"intent-engine", plat:"android", demo:true,
+    tag:"Understands why users act — not just what they tapped.",
+    tag_he:"מבינה למה משתמשים פועלים — לא רק על מה הם לחצו.",
+    long:"Reads rage taps, double-back, type-delete loops, scan-scrolling, failed drags, hesitation and zigzag navigation, then fuses them into a live frustration score. Every signal carries a confidence and the evidence behind it.",
+    long_he:"מזהה נקישות זעם, חזרה כפולה, לולאות הקלדה־מחיקה, גלילה סורקת, גרירות כושלות, היסוס וניווט מזגזג — ומאחדת הכול לציון תסכול חי. לכל אות יש ציון ביטחון והראיות שמאחוריו.",
+    signals:["RAGE_TAP","HESITATION","DOUBLE_BACK","TYPE_DELETE_LOOP","SCAN_SCROLL","FAILED_DRAG","ZIGZAG_NAV"],
+    code:`IntentEngine.init(this)
+
+IntentEngine.addListener { signal ->
+    if (signal.type == IntentType.RAGE_TAP) {
+        showHelp(signal.confidence)   // 0.0 – 1.0
+    }
+}
+
+val score = IntentEngine.frustrationScore()`,
+    premium:"Frustration heatmaps across your whole install base, ranked by screen, with the evidence trail for each spike.",
+    premium_he:"מפות חום של תסכול על פני כל ההתקנות, מדורגות לפי מסך, עם שובל הראיות לכל קפיצה." },
+
+  { id:"context-moments", plat:"android",
+    tag:"The user's current moment, fused from six sensors.",
+    tag_he:"הרגע הנוכחי של המשתמש, מאוחד משישה חיישנים.",
+    long:"Combines motion, screen state, audio routes, DND, network and time of day into one verdict: driving, walking, working, in a meeting, just woke up, watching TV. Returns UNKNOWN rather than guessing when the evidence is thin.",
+    long_he:"משלבת תנועה, מצב מסך, יציאות שמע, נא לא להפריע, רשת ושעה ביום להכרעה אחת: נוהג, הולך, עובד, בפגישה, בדיוק התעורר, צופה בטלוויזיה. כשהראיות דלות היא מחזירה UNKNOWN במקום לנחש.",
+    signals:["DRIVING","WALKING","WORKING","IN_MEETING","JUST_WOKE_UP","WATCHING_TV"],
+    code:`ContextMoments.init(this)
+
+ContextMoments.sampleNow { snapshot ->
+    if (snapshot.moment == Moment.DRIVING) {
+        switchToVoiceMode()
+    }
+    // snapshot.confidence, snapshot.scores, snapshot.signals
+}`,
+    premium:"See which moments your feature is actually used in — and which ones you're interrupting.",
+    premium_he:"לראות באילו רגעים באמת משתמשים בפיצ׳ר שלכם — ובאילו רגעים אתם מפריעים." },
+
+  { id:"screenshot-intelligence", plat:"android",
+    tag:"Knows what the user just screenshotted.",
+    tag_he:"יודעת מה המשתמש בדיוק צילם מהמסך.",
+    long:"Detects a screenshot and classifies it on-device — receipt, error, chat, ticket, map, product, code — extracts entities and suggests the action that follows. Uses bundled ML Kit OCR; nothing is uploaded.",
+    long_he:"מזהה צילום מסך ומסווגת אותו על המכשיר — קבלה, שגיאה, צ׳אט, כרטיס, מפה, מוצר, קוד — מחלצת ישויות ומציעה את הפעולה הבאה. משתמשת ב־OCR מובנה של ML Kit; שום דבר לא מועלה.",
+    signals:["RECEIPT","ERROR","CHAT","TICKET","MAP","PRODUCT","CODE"],
+    code:`ScreenshotIQ.init(this)
+
+ScreenshotIQ.addListener { shot ->
+    when (shot.kind) {
+        Kind.RECEIPT -> offerExpenseCapture(shot.entities)
+        Kind.ERROR   -> offerSupportTicket(shot.text)
+        else -> Unit
+    }
+}`,
+    premium:"Aggregate what your users screenshot most — the clearest signal of what they wish they could export.",
+    premium_he:"לראות מה המשתמשים הכי מצלמים — האות הברור ביותר למה הם היו רוצים לייצא." },
+
+  { id:"exit-reason", plat:"android",
+    tag:"Why the user left — not just that they did.",
+    tag_he:"למה המשתמש יצא — לא רק שהוא יצא.",
+    long:"Instead of a bare onPause(), get a verdict with evidence: incoming call, rage quit, task completed, quick bounce, lost interest, screen off, battery low, switched away, crash. Crashes come from ApplicationExitInfo on the next launch.",
+    long_he:"במקום onPause() יבש, מקבלים הכרעה עם ראיות: שיחה נכנסת, יציאה מתוך זעם, משימה הושלמה, יציאה מהירה, איבוד עניין, מסך כבוי, סוללה חלשה, מעבר לאפליקציה אחרת, קריסה. קריסות מגיעות מ־ApplicationExitInfo בהפעלה הבאה.",
+    signals:["INCOMING_CALL","TASK_COMPLETED","RAGE_QUIT","QUICK_BOUNCE","LOST_INTEREST","SCREEN_OFF","BATTERY_LOW","CRASH"],
+    code:`ExitReason.init(this)
+
+// Mark real completion points so TASK_COMPLETED can win:
+ExitReason.markTaskCompleted()
+
+ExitReason.lastReport()?.let { r ->
+    log(r.reason, r.confidence, r.details["idle_before_exit_s"])
+}`,
+    premium:"Session-end breakdown across releases — watch RAGE_QUIT fall after a fix, with the evidence attached.",
+    premium_he:"פילוח סיומי סשן בין גרסאות — לראות את RAGE_QUIT יורד אחרי תיקון, עם הראיות מצורפות." },
+
+  { id:"adaptive-ui", plat:"android",
+    tag:"One composable. The layout learns which shape wins.",
+    tag_he:"‏composable אחד. הפריסה לומדת איזו צורה מנצחת.",
+    long:"Renders the same items as grid, list, cards or carousel while a per-user Thompson-sampling bandit learns which layout that person actually engages with. No config, no A/B setup.",
+    long_he:"מציגה את אותם פריטים כרשת, רשימה, כרטיסים או קרוסלה, בזמן שאלגוריתם bandit אישי לומד עם איזו פריסה האדם הזה באמת מתקשר. בלי הגדרות ובלי מערך A/B.",
+    signals:["GRID","LIST","CARDS","CAROUSEL"],
+    code:`AdaptiveCollection(items = products) { item ->
+    ProductCell(item)
+}
+
+// The bandit rewards what gets engagement:
+AdaptiveUi.reportEngagement("catalog", weight = 1.0)`,
+    premium:"Fleet-wide layout win rates, split by device shape and cohort.",
+    premium_he:"אחוזי ניצחון של כל פריסה על פני כל המכשירים, בפילוח לפי צורת מכשיר וקבוצה." },
+
+  { id:"flow-learning", plat:"android",
+    tag:"An on-device UX consultant that files a report.",
+    tag_he:"יועץ UX על המכשיר, שמגיש דוח.",
+    long:"Mines screen orderings, drop-offs, confusion loops, funnel leaks and common paths, then emits ranked recommendations in plain language. All of it computed on the device.",
+    long_he:"כורה סדרי מסכים, נשירות, לולאות בלבול, דליפות במשפך ומסלולים נפוצים — ומפיקה המלצות מדורגות בשפה פשוטה. הכול מחושב על המכשיר.",
+    signals:["DROP_OFF","CONFUSION_LOOP","FUNNEL_LEAK","COMMON_PATH"],
+    code:`FlowLearning.init(this)
+FlowLearning.screen("checkout")
+
+FlowLearning.recommendations().forEach { rec ->
+    log(rec.title, rec.severity, rec.evidence)
+}`,
+    premium:"Merge every user's private report into one funnel view — without collecting raw screen traces.",
+    premium_he:"לאחד את הדוח הפרטי של כל משתמש למשפך אחד — בלי לאסוף מסלולי מסכים גולמיים." },
+
+  { id:"rhythm-engine", plat:"android",
+    tag:"Learns the week the user actually lives.",
+    tag_he:"לומדת את השבוע שהמשתמש באמת חי.",
+    long:"Builds a personal weekly rhythm: the best hour to notify, the next expected open, likely session length, and a churn-risk read — so notifications land when the person is receptive instead of when your cron fires.",
+    long_he:"בונה קצב שבועי אישי: השעה הטובה ביותר להתראה, הפתיחה הבאה הצפויה, אורך סשן משוער וסיכון נטישה — כדי שההתראות ינחתו כשהאדם פנוי, ולא כשה־cron שלכם רץ.",
+    signals:["BEST_HOUR","NEXT_OPEN","SESSION_LEN","CHURN_RISK"],
+    code:`RhythmEngine.init(this)
+
+val window = RhythmEngine.bestTimeToEngage().firstOrNull()
+val risk   = RhythmEngine.churnRisk()   // 0.0 – 1.0
+
+if (risk > 0.7) offerWinBack()`,
+    premium:"Cohort rhythm curves — see when your whole base is reachable, per timezone.",
+    premium_he:"עקומות קצב לפי קבוצות — לראות מתי כל בסיס המשתמשים זמין, לפי אזור זמן." },
+
+  { id:"perceived-speed", plat:"android",
+    tag:"How fast it feels, not what the trace says.",
+    tag_he:"כמה מהר זה מרגיש, לא מה שה־trace אומר.",
+    long:"Cold start, per-screen time-to-interactive, jank, tap latency and main-thread stalls with the guilty stack — reduced to one felt-score per screen, so you know which screen to fix first.",
+    long_he:"הפעלה קרה, זמן עד אינטראקטיביות לכל מסך, קפיצות, השהיית מגע ותקיעות בת׳רד הראשי עם ה־stack האשם — מצומצמים לציון תחושה אחד לכל מסך, כדי שתדעו איזה מסך לתקן ראשון.",
+    signals:["COLD_START","TTI","JANK","TAP_LATENCY","MAIN_THREAD_STALL"],
+    code:`PerceivedSpeed.init(this)
+PerceivedSpeed.screenReady("feed")
+
+PerceivedSpeed.report().worstScreens().forEach {
+    log(it.screen, it.feltScore, it.guiltyStack)
+}`,
+    premium:"Felt-score by device tier — find the phones where your app feels slow, not the ones you own.",
+    premium_he:"ציון תחושה לפי רמת מכשיר — לאתר את הטלפונים שבהם האפליקציה מרגישה איטית, לא את אלה שיש לכם ביד." },
+
+  { id:"form-sense", plat:"android",
+    tag:"Finds the field where people give up.",
+    tag_he:"מוצאת את השדה שבו אנשים מוותרים.",
+    long:"Per-field friction: corrections, dwell, refocus and abandonment point, each paired with a concrete fix suggestion. The field that kills your signup is usually not the one you'd guess.",
+    long_he:"חיכוך ברמת השדה: תיקונים, זמן שהייה, חזרות למיקוד ונקודת הנטישה — כל אחד עם הצעת תיקון קונקרטית. השדה שהורג לכם את ההרשמה הוא בדרך כלל לא זה שהייתם מנחשים.",
+    signals:["CORRECTIONS","DWELL","REFOCUS","ABANDONED_AT"],
+    code:`FormSense.track("signup")
+
+Modifier.formField("email")   // Compose
+
+FormSense.report("signup").abandonedAt   // "phone_number"`,
+    premium:"Abandonment funnels per form, per field, across every install.",
+    premium_he:"משפכי נטישה לכל טופס, לכל שדה, על פני כל ההתקנות." },
+
+  { id:"grip-sense", plat:"android",
+    tag:"Knows which thumb is holding the phone.",
+    tag_he:"יודעת באיזו יד מחזיקים את הטלפון.",
+    long:"Detects handedness and thumb reach, heatmaps taps and flags the controls users physically strain to reach. Ships a Compose debug overlay so you can see the reach zones while you build.",
+    long_he:"מזהה יד דומיננטית וטווח אגודל, ממפה נגיעות ומסמנת פקדים שמשתמשים מתאמצים פיזית להגיע אליהם. כוללת שכבת דיבאג ל־Compose שמראה את אזורי ההישג בזמן הפיתוח.",
+    signals:["LEFT_HAND","RIGHT_HAND","TWO_HAND","STRAIN_ZONE"],
+    code:`GripSense.init(this)
+
+GripSense.handedness()      // LEFT / RIGHT / TWO_HAND
+GripSense.strainedControls()
+
+GripSenseOverlay()          // Compose debug overlay`,
+    premium:"Reach heatmaps by device size — see which buttons are unreachable on the phones people actually own.",
+    premium_he:"מפות הישג לפי גודל מכשיר — לראות אילו כפתורים לא נגישים בטלפונים שלאנשים באמת יש." },
+
+  { id:"discovery-coach", plat:"android",
+    tag:"Teaches a feature at the one calm moment.",
+    tag_he:"מלמדת פיצ׳ר ברגע הרגוע היחיד.",
+    long:"A nudge engine with hard anti-nag guarantees: right feature, right moment, capped frequency, and a dead-feature report listing what nobody has ever found.",
+    long_he:"מנוע רמזים עם הבטחות קשיחות נגד נדנוד: הפיצ׳ר הנכון, ברגע הנכון, בתדירות מוגבלת — ודוח פיצ׳רים מתים שמפרט מה אף אחד מעולם לא מצא.",
+    signals:["NUDGE_READY","CALM_MOMENT","DEAD_FEATURE"],
+    code:`DiscoveryCoach.init(this)
+DiscoveryCoach.register("export_pdf", "Export as PDF")
+
+DiscoveryCoach.reportCalmMoment()
+DiscoveryCoach.nextNudge()?.let { showTip(it) }
+
+DiscoveryCoach.deadFeatures()`,
+    premium:"Discovery rates per feature — which nudges convert, which features stay invisible.",
+    premium_he:"שיעורי גילוי לכל פיצ׳ר — אילו רמזים ממירים, ואילו פיצ׳רים נשארים בלתי נראים." },
+
+  { id:"feature-usage", plat:"both",
+    tag:"Usage tracking with the stats screen already built.",
+    tag_he:"מעקב שימוש עם מסך הסטטיסטיקות כבר בפנים.",
+    long:"Track a feature in one line and get a complete drop-in stats screen: features, timeline, insights, search, sorting, a 7/30/90-day activity chart, a 12-week heatmap, streaks and time spent.",
+    long_he:"עוקבים אחרי פיצ׳ר בשורה אחת ומקבלים מסך סטטיסטיקות שלם ומוכן: פיצ׳רים, ציר זמן, תובנות, חיפוש, מיון, גרף פעילות ל־7/30/90 יום, מפת חום של 12 שבועות, רצפים וזמן שהייה.",
+    signals:["TRACK","TIMED_SESSION","STREAK","TIME_SPENT"],
+    code:`FeatureUsage.track("export_pdf")
+FeatureUsage.begin("editor")
+FeatureUsage.end("editor")
+
+// Drop the whole screen into a debug menu:
+NavigationLink("Feature usage") { FeatureUsageView() }`,
+    premium:"Roll the built-in screen up to a team dashboard — same numbers, whole install base.",
+    premium_he:"להרים את המסך המובנה לדשבורד צוותי — אותם מספרים, על פני כל ההתקנות." },
+
+  { id:"user-memory", plat:"both",
+    tag:"A small memory of the person using your app.",
+    tag_he:"זיכרון קטן של האדם שמשתמש באפליקציה.",
+    long:"Preferences and learned facts persisted on-device with typed accessors and no setup — the first call loads and persists automatically.",
+    long_he:"העדפות ועובדות נלמדות נשמרות על המכשיר, עם גישה מוטיפסת ובלי שום הגדרה — הקריאה הראשונה טוענת ושומרת אוטומטית.",
+    signals:["PREFERENCE","LEARNED_FACT","EXPORT"],
+    code:`UserMemory.set("units", "metric")
+UserMemory.set("rest_seconds", 90)
+
+UserMemory.string(for: "units", default: "imperial")
+UserMemory.int(for: "rest_seconds", default: 60)`,
+    premium:"Anonymous preference distributions — see what your users actually pick, before you pick a default.",
+    premium_he:"התפלגות העדפות אנונימית — לראות מה המשתמשים באמת בוחרים, לפני שאתם בוחרים ברירת מחדל." }
+];
+
+const CLS = {
+  "intent-engine":"IntentEngine", "context-moments":"ContextMoments",
+  "screenshot-intelligence":"ScreenshotIQ", "exit-reason":"ExitReason",
+  "adaptive-ui":"AdaptiveUi", "flow-learning":"FlowLearning",
+  "rhythm-engine":"RhythmEngine", "perceived-speed":"PerceivedSpeed",
+  "form-sense":"FormSense", "grip-sense":"GripSense",
+  "discovery-coach":"DiscoveryCoach", "feature-usage":"FeatureUsage",
+  "user-memory":"UserMemory"
+};
+const PLAT = {
+  en:{ android:"Android", ios:"iOS", both:"Android · iOS" },
+  he:{ android:"אנדרואיד", ios:"iOS", both:"אנדרואיד · iOS" }
+};
+const REPO = "https://github.com/rongo270/rgkit";
+
+const tag  = s => LANG === "he" ? s.tag_he  : s.tag;
+const long = s => LANG === "he" ? s.long_he : s.long;
+const prem = s => LANG === "he" ? s.premium_he : s.premium;
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+function hl(src) {
+  return esc(src)
+    .replace(/(\/\/[^\n]*)/g, '<span class="c">$1</span>')
+    .replace(/(&quot;[^&]*?&quot;)/g, '<span class="s">$1</span>')
+    .replace(/\b(val|var|fun|if|else|when|import|return|forEach|let)\b/g, '<span class="k">$1</span>');
+}
+const codeBlock = (label, src) =>
+  `<div class="codehead">${esc(label)}</div><pre class="code" dir="ltr">${hl(src)}</pre>`;
+
+function reveal(root = document) {
+  const els = root.querySelectorAll(".rv");
+  if (!("IntersectionObserver" in window)) { els.forEach(e => e.classList.add("in")); return; }
+  const io = new IntersectionObserver(en => {
+    en.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { rootMargin: "0px 0px -8% 0px", threshold: .08 });
+  els.forEach(e => io.observe(e));
+}
+
+/* ============================================================
+   CHART DATA + RENDERERS
+   ============================================================ */
+const D_FR   = [42,45,41,48,52,50,47,44,46,51,55,58,54,49,45,43,40,38,41,39,36,34,33,35,31,29,28,26,25,24];
+const D_RAGE = [22,25,21,28,31,29,27,24,26,30,33,35,32,28,25,23,21,19,22,20,18,17,16,18,15,14,13,12,11,10];
+const D_HES  = [31,33,30,34,36,35,33,32,34,37,39,41,38,35,33,31,30,28,31,29,27,26,25,27,24,23,22,21,20,19];
+
+function lineChart({ w = 560, h = 170, data, labels, colors }) {
+  const pad = { l: 34, r: 14, t: 12, b: 24 };
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const max = Math.max(...data.flat()) * 1.12, min = 0;
+  const X = i => pad.l + (i / (data[0].length - 1)) * iw;
+  const Y = v => pad.t + ih - ((v - min) / (max - min)) * ih;
+
+  const gridY = [0,.25,.5,.75,1].map(k => {
+    const y = pad.t + ih - k * ih;
+    return `<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>
+      <text x="${pad.l-8}" y="${y+3.5}" text-anchor="end" font-size="9" fill="var(--ink-3)">${Math.round(min+k*(max-min))}</text>`;
+  }).join("");
+
+  const paths = data.map((row, si) => {
+    const d = row.map((v,i) => `${i?"L":"M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join("");
+    const area = data.length === 1
+      ? `<path d="${d}L${X(row.length-1)},${pad.t+ih}L${X(0)},${pad.t+ih}Z" fill="${colors[si]}" opacity=".10"/>` : "";
+    return `${area}<path d="${d}" fill="none" stroke="${colors[si]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${X(row.length-1)}" cy="${Y(row[row.length-1])}" r="4" fill="${colors[si]}" stroke="var(--panel)" stroke-width="2"/>`;
+  }).join("");
+
+  const step = Math.ceil(labels.length / 6);
+  const ticks = labels.map((l,i) => (i % step === 0 || i === labels.length-1)
+    ? `<text x="${X(i)}" y="${h-6}" text-anchor="middle" font-size="9" fill="var(--ink-3)">${esc(l)}</text>` : "").join("");
+
+  const bw = iw / labels.length;
+  const hits = labels.map((l,i) =>
+    `<rect x="${X(i)-bw/2}" y="${pad.t}" width="${bw}" height="${ih}" fill="transparent" data-i="${i}" data-label="${esc(l)}"/>`).join("");
+
+  return `<svg class="plot" viewBox="0 0 ${w} ${h}" font-family="ui-monospace,Menlo,monospace" role="img" aria-label="chart">
+    ${gridY}${paths}${ticks}
+    <line class="cross" x1="0" y1="${pad.t}" x2="0" y2="${pad.t+ih}" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
+    <g class="hits">${hits}</g></svg>`;
+}
+
+function barsH(rows) {
+  const max = Math.max(...rows.map(r => r.v));
+  return `<div style="display:grid;gap:.5rem">` + rows.map(r => `
+    <div style="display:grid;grid-template-columns:130px 1fr 46px;gap:.6rem;align-items:center" data-tip="${esc(r.k)} · ${r.v}%">
+      <span class="mono ltr" style="font-size:.74rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.k)}</span>
+      <span style="height:10px;background:var(--grid);border-radius:5px;overflow:hidden;display:block">
+        <i style="display:block;height:100%;width:${(r.v/max*100).toFixed(1)}%;background:var(--series-1);border-radius:5px"></i>
+      </span>
+      <span class="mono" style="font-size:.74rem;text-align:end;font-variant-numeric:tabular-nums">${r.v}%</span>
+    </div>`).join("") + `</div>`;
+}
+
+function heat(weeks = 12) {
+  const dl = t("days");
+  let cells = "";
+  for (let d = 0; d < 7; d++) for (let w = 0; w < weeks; w++) {
+    const v = Math.max(.04, Math.min(1, (d < 5 ? .55 : .25) + Math.sin((w+d)*1.1)*.22 + (w/weeks)*.2));
+    cells += `<rect x="${w*15}" y="${d*15}" width="12" height="12" rx="2" fill="var(--series-1)" fill-opacity="${v.toFixed(2)}"
+      data-tip="${dl[d]} · ${t("dash.week")} ${w+1} · ${Math.round(v*100)}% ${t("dash.active")}"/>`;
+  }
+  const lab = dl.map((d,i) => `<text x="-6" y="${i*15+9.5}" text-anchor="end" font-size="8" fill="var(--ink-3)">${d}</text>`).join("");
+  return `<svg class="plot" viewBox="-16 -4 ${weeks*15+20} 112" font-family="ui-monospace,Menlo,monospace" role="img" aria-label="heatmap">${lab}${cells}</svg>`;
+}
+
+/* ============================================================
+   PHONE DEMOS — real product UI, running in the page.
+   Each entry returns { html, init(root) -> cleanup }.
+   ============================================================ */
+const DT = {
+  en:{ tapfast:"Tap the button fast, then hold still.", tapme:"Pay now", checkout:"Checkout",
+       reach:"Toggle the hand. Grey controls are outside the thumb arc.",
+       left:"Left hand", right:"Right hand", strained:"out of reach",
+       replay:"Replay", scenario:"Scenario", waiting:"waiting for a signal…",
+       shutter:"Take a screenshot", classified:"classified on-device",
+       signup:"Create account", cont:"Continue", email:"Email", phone:"Phone number", card:"Card",
+       layouts:"The bandit is choosing. Win rates update as engagement arrives.",
+       notify:"best hour to notify", feed:"Feed", loading:"Loading…",
+       tip:"Tip: you can export this as PDF", gotit:"Got it", nudged:"nudges shown today",
+       stats:"Feature usage", prefs:"Preferences", funnel:"Signup funnel",
+       tryall:"Every signal is reachable: type then delete the card number a few times, scroll the list fast, press ‹ twice, flip tabs back and forth, drag the chip and drop it nowhere, or hammer Pay.",
+       cardnum:"Card number", drag:"Save card", drop:"Drop here", typehere:"Type here" },
+  he:{ tapfast:"לחצו על הכפתור מהר, ואז עצרו.", tapme:"שלם עכשיו", checkout:"תשלום",
+       reach:"החליפו יד. פקדים אפורים נמצאים מחוץ לקשת האגודל.",
+       left:"יד שמאל", right:"יד ימין", strained:"מחוץ להישג",
+       replay:"הרצה מחדש", scenario:"תרחיש", waiting:"ממתין לאות…",
+       shutter:"צלמו מסך", classified:"סווג על המכשיר",
+       signup:"יצירת חשבון", cont:"המשך", email:"אימייל", phone:"מספר טלפון", card:"כרטיס",
+       layouts:"האלגוריתם בוחר. אחוזי הניצחון מתעדכנים לפי מעורבות.",
+       notify:"השעה הטובה להתראה", feed:"פיד", loading:"טוען…",
+       tip:"טיפ: אפשר לייצא כ־PDF", gotit:"הבנתי", nudged:"רמזים שהוצגו היום",
+       stats:"שימוש בפיצ׳רים", prefs:"העדפות", funnel:"משפך הרשמה",
+       tryall:"כל האותות ניתנים להפעלה: הקלידו ומחקו את מספר הכרטיס כמה פעמים, גללו את הרשימה מהר, לחצו ‹ פעמיים, החליפו לשוניות הלוך ושוב, גררו את התווית ושחררו באוויר, או הפציצו את כפתור התשלום.",
+       cardnum:"מספר כרטיס", drag:"שמירת כרטיס", drop:"שחררו כאן", typehere:"הקלידו כאן" }
+};
+const d = k => (DT[LANG] && DT[LANG][k]) || DT.en[k];
+
+const phone = inner => `
+  <div class="phone"><div class="island"></div><div class="screen">
+    <div class="statusbar"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+    ${inner}
+  </div></div>`;
+
+/* head = the SDK id; the roster lists every signal that SDK can emit,
+   so nothing is hidden behind whichever one happens to fire first */
+const verdict = (head, id) => {
+  const sdk = SDKS.find(x => x.id === head);
+  const roster = (sdk ? sdk.signals : []).map(n =>
+    `<div class="sig" data-sig="${n}">
+       <span class="sn">${n}</span><span class="sv">—</span>
+       <span class="sb"><i></i></span>
+     </div>`).join("");
+  return `<div class="demo-verdict">
+    <div class="vh">${head}</div>
+    <div class="verdict-main" id="${id}-v"><b>—</b><span>${d("waiting")}</span></div>
+    <dl class="evidence" id="${id}-e"></dl>
+    <div class="siglist" id="${id}-s">${roster}</div>
+  </div>`;
+};
+
+const setVerdict = (id, name, conf, ev) => {
+  const v = document.getElementById(id + "-v"), e = document.getElementById(id + "-e");
+  if (!v) return;
+  v.innerHTML = `<b>${name}</b><span>${conf == null ? "" : "confidence " + conf.toFixed(2)}</span>`;
+  if (e) e.innerHTML = Object.entries(ev || {}).map(([k, val]) =>
+    `<div><dt>${k}</dt><dd>${val}</dd></div>`).join("");
+
+  const list = document.getElementById(id + "-s");
+  if (!list) return;
+  list.querySelectorAll(".sig").forEach(row => {
+    const hit = row.dataset.sig === name;
+    row.classList.toggle("on", hit);
+    if (hit) {
+      row.querySelector(".sv").textContent = conf == null ? "fired" : conf.toFixed(2);
+      row.querySelector(".sb i").style.width = ((conf == null ? .6 : conf) * 100) + "%";
+    }
+  });
+};
+
+/* small scheduler every demo uses; returns a cleanup fn */
+function loop(steps, ms) {
+  let i = 0, timer = null, stopped = false;
+  const tick = () => {
+    if (stopped) return;
+    steps[i % steps.length](i);
+    i++;
+    timer = setTimeout(tick, ms);
+  };
+  tick();
+  return () => { stopped = true; clearTimeout(timer); };
+}
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* built per render, so demo copy follows the current language */
+const buildDemos = () => ({
+  /* ---------- fully interactive: all seven signals reachable ---------- */
+  "intent-engine": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar"><button class="backbtn" id="ie-back">‹</button>${d("checkout")}</div>
+        <div class="ptabs">
+          <button class="on" data-tab="card">${d("card")}</button>
+          <button data-tab="paypal">PayPal</button>
+        </div>
+        <div class="appbody" id="ie-body">
+          <label class="lb" style="font-size:.58rem;color:var(--ink-3)">${d("cardnum")}</label>
+          <input class="fakeinput" id="ie-card" inputmode="numeric" autocomplete="off"
+                 placeholder="4242 4242 4242 4242" style="margin:.2rem 0 .5rem">
+          <div class="scroller" id="ie-scroll">
+            ${Array.from({length:8},(_,i)=>`<div class="mcell" style="height:26px"><span class="mline"></span><span style="font-size:.58rem;color:var(--ink-3)">₪${18+i*7}</span></div>`).join("")}
+          </div>
+          <div style="display:flex;gap:.4rem;align-items:center;margin:.5rem 0">
+            <span class="chip-drag" id="ie-chip">${d("drag")}</span>
+            <span class="dropzone" id="ie-drop" style="flex:1">${d("drop")}</span>
+          </div>
+          <button class="fakebtn" id="ie-btn">${d("tapme")}</button>
+          <p style="color:var(--crit);font-size:.6rem;margin:.4rem 0 0;text-align:center" id="ie-err" hidden>Payment failed. Try again.</p>
+        </div>`)}
+      <div class="demo-side">
+        <p class="hint">${d("tryall")}</p>
+        ${verdict("intent-engine", "ie")}
+      </div></div>`,
+    init(root) {
+      const body = root.querySelector("#ie-body");
+      const card = root.querySelector("#ie-card");
+      const btn  = root.querySelector("#ie-btn");
+      const err  = root.querySelector("#ie-err");
+      const back = root.querySelector("#ie-back");
+      const chip = root.querySelector("#ie-chip");
+      const drop = root.querySelector("#ie-drop");
+      const scr  = root.querySelector("#ie-scroll");
+      const tabs = [...root.querySelectorAll("[data-tab]")];
+
+      let idleT = null, cleanups = [];
+      const on = (el, ev, fn, opt) => { el.addEventListener(ev, fn, opt); cleanups.push(() => el.removeEventListener(ev, fn, opt)); };
+
+      const fire = (name, conf, ev) => {
+        setVerdict("ie", name, conf, ev);
+        clearTimeout(idleT);
+        idleT = setTimeout(() => setVerdict("ie", "HESITATION", .64,
+          { idle_s: "2.0", after: name }), 2000);
+      };
+
+      /* RAGE_TAP */
+      let taps = [];
+      on(btn, "pointerdown", e => {
+        const r = body.getBoundingClientRect();
+        const dot = document.createElement("span");
+        dot.className = "tapdot";
+        dot.style.left = (e.clientX - r.left) + "px"; dot.style.top = (e.clientY - r.top) + "px";
+        body.appendChild(dot); setTimeout(() => dot.remove(), 600);
+        err.hidden = false;
+        const now = performance.now();
+        taps = taps.filter(t => now - t < 1000); taps.push(now);
+        if (taps.length >= 3) fire("RAGE_TAP", Math.min(.97, .38 + taps.length * .11),
+          { taps_in_window: taps.length, window_ms: 1000, same_target: "true" });
+        else fire("TAP", null, { taps_in_window: taps.length });
+      });
+
+      /* TYPE_DELETE_LOOP — real typing, watches length go down then up */
+      let prevLen = 0, deletes = 0, retypes = 0, typeT = null;
+      on(card, "input", () => {
+        const len = card.value.length;
+        if (len < prevLen) deletes++;
+        else if (len > prevLen && deletes > 0) retypes++;
+        prevLen = len;
+        clearTimeout(typeT);
+        typeT = setTimeout(() => { deletes = 0; retypes = 0; }, 8000);
+        if (deletes >= 3 && retypes >= 2)
+          fire("TYPE_DELETE_LOOP", Math.min(.95, .5 + deletes * .07),
+            { field: "card_number", deletes, retypes, chars: len });
+        else
+          fire("TYPING", null, { field: "card_number", chars: len, deletes });
+      });
+
+      /* SCAN_SCROLL */
+      let lastTop = 0, lastTs = 0;
+      on(scr, "scroll", () => {
+        const now = performance.now();
+        const v = Math.abs(scr.scrollTop - lastTop) / Math.max(16, now - lastTs) * 1000;
+        lastTop = scr.scrollTop; lastTs = now;
+        if (v > 380) fire("SCAN_SCROLL", Math.min(.93, v / 900),
+          { px_per_s: Math.round(v), dwell_ms: 0 });
+      }, { passive: true });
+
+      /* DOUBLE_BACK */
+      let backs = [];
+      on(back, "click", () => {
+        const now = performance.now();
+        backs = backs.filter(t => now - t < 800); backs.push(now);
+        if (backs.length >= 2) fire("DOUBLE_BACK", .86, { presses: backs.length, window_ms: 800, screen: "checkout" });
+        else fire("BACK", null, { presses: 1 });
+      });
+
+      /* ZIGZAG_NAV */
+      let switches = [];
+      on(root, "click", e => {
+        const b = e.target.closest("[data-tab]"); if (!b) return;
+        tabs.forEach(x => x.classList.toggle("on", x === b));
+        const now = performance.now();
+        switches = switches.filter(t => now - t < 5000); switches.push(now);
+        if (switches.length >= 4) fire("ZIGZAG_NAV", Math.min(.92, .45 + switches.length * .09),
+          { switches: switches.length, window_s: 5, between: "card ↔ paypal" });
+        else fire("NAV", null, { switches: switches.length });
+      });
+
+      /* FAILED_DRAG — picked up, moved, released outside the target */
+      let dragging = false, moved = 0, sx = 0, sy = 0;
+      on(chip, "pointerdown", e => {
+        dragging = true; moved = 0; sx = e.clientX; sy = e.clientY;
+        chip.setPointerCapture(e.pointerId);
+      });
+      on(chip, "pointermove", e => {
+        if (!dragging) return;
+        moved = Math.hypot(e.clientX - sx, e.clientY - sy);
+        const r = drop.getBoundingClientRect();
+        const over = e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom;
+        drop.classList.toggle("hot", over);
+        chip.style.transform = `translate(${e.clientX - sx}px, ${e.clientY - sy}px)`;
+      });
+      on(chip, "pointerup", e => {
+        if (!dragging) return;
+        dragging = false;
+        const r = drop.getBoundingClientRect();
+        const dropped = e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom;
+        chip.style.transform = "";
+        drop.classList.remove("hot");
+        if (moved > 18 && !dropped)
+          fire("FAILED_DRAG", .79, { travel_px: Math.round(moved), released_over: "nothing", target: "save_zone" });
+        else if (dropped)
+          fire("DRAG_OK", null, { travel_px: Math.round(moved), target: "save_zone" });
+      });
+
+      return () => { cleanups.forEach(f => f()); clearTimeout(idleT); clearTimeout(typeT); };
+    }
+  },
+
+  /* ---------- interactive: thumb reach ---------- */
+  "grip-sense": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">${d("feed")}</div>
+        <div class="appbody">
+          <svg class="reach" id="gs-arc" viewBox="0 0 100 190" preserveAspectRatio="none"></svg>
+          <div style="position:relative;display:grid;gap:.45rem">
+            <button class="fakebtn ghost" data-x="18" data-y="12">Filter</button>
+            <button class="fakebtn ghost" data-x="82" data-y="12">Sort</button>
+            <div class="mcell"><span class="mthumb"></span><span class="mline"></span></div>
+            <div class="mcell"><span class="mthumb"></span><span class="mline"></span></div>
+            <div class="mcell"><span class="mthumb"></span><span class="mline"></span></div>
+            <button class="fakebtn" data-x="50" data-y="88">Add</button>
+          </div>
+        </div>`)}
+      <div class="demo-side">
+        <p class="hint">${d("reach")}</p>
+        <div class="demo-ctl">
+          <button class="on" data-hand="right">${d("right")}</button>
+          <button data-hand="left">${d("left")}</button>
+        </div>
+        ${verdict("grip-sense", "gs")}
+      </div></div>`,
+    init(root) {
+      const arc = root.querySelector("#gs-arc");
+      const btns = [...root.querySelectorAll("[data-x]")];
+      let hand = "right";
+      const draw = () => {
+        const cx = hand === "right" ? 88 : 12;
+        arc.innerHTML = `<circle cx="${cx}" cy="182" r="86" fill="var(--accent-soft)" opacity=".55"/>
+          <circle cx="${cx}" cy="182" r="86" fill="none" stroke="var(--accent-line)" stroke-width=".6" stroke-dasharray="3 2"/>`;
+        let strained = 0;
+        btns.forEach(b => {
+          const bx = +b.dataset.x, by = +b.dataset.y;
+          const dist = Math.hypot(bx - cx, (by - 96) * 1.9);
+          const ok = dist < 86;
+          b.style.opacity = ok ? "1" : ".42";
+          b.style.filter = ok ? "none" : "grayscale(1)";
+          if (!ok) strained++;
+        });
+        setVerdict("gs", hand === "right" ? "RIGHT_HAND" : "LEFT_HAND", .84,
+          { thumb_reach_pct: hand === "right" ? 71 : 69, controls_strained: strained, sample_taps: 412 });
+      };
+      const onClick = e => {
+        const b = e.target.closest("[data-hand]"); if (!b) return;
+        hand = b.dataset.hand;
+        root.querySelectorAll("[data-hand]").forEach(x => x.classList.toggle("on", x === b));
+        draw();
+      };
+      root.addEventListener("click", onClick);
+      draw();
+      return () => root.removeEventListener("click", onClick);
+    }
+  },
+
+  /* ---------- cycling scenarios ---------- */
+  "exit-reason": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar" id="er-bar">${d("feed")}</div>
+        <div class="appbody" id="er-body">
+          <div class="mcell"><span class="mthumb"></span><span class="mline"></span></div>
+          <div class="mcell"><span class="mthumb"></span><span class="mline"></span></div>
+          <div class="mcell"><span class="mthumb"></span><span class="mline"></span></div>
+          <div id="er-overlay" style="position:absolute;inset:0;display:grid;place-items:center;background:var(--panel-2);opacity:0;transition:opacity .4s">
+            <div style="text-align:center"><div style="font-size:1.6rem" id="er-icon">📞</div>
+            <p style="font-size:.7rem;color:var(--ink-2);margin:.4rem 0 0" id="er-text"></p></div>
+          </div>
+        </div>`)}
+      <div class="demo-side">
+        <p class="hint">${d("scenario")}</p>
+        ${verdict("exit-reason", "er")}
+      </div></div>`,
+    init(root) {
+      const ov = root.querySelector("#er-overlay"), ic = root.querySelector("#er-icon"), tx = root.querySelector("#er-text");
+      const scenes = [
+        ["📞", "Incoming call", "INCOMING_CALL", .91, { audio_mode: "ringing", idle_before_exit_s: 0.4 }],
+        ["✅", "Task completed", "TASK_COMPLETED", .88, { marked_complete_s_ago: 2.1, session_s: 74 }],
+        ["🪫", "Battery 3%", "BATTERY_LOW", .79, { battery_pct: 3, charging: "false" }],
+        ["😤", "Rapid taps, then gone", "RAGE_QUIT", .83, { rage_taps: 6, idle_before_exit_s: 0.2 }]
+      ];
+      const steps = scenes.flatMap(([icon, label, name, conf, ev]) => [
+        () => { ic.textContent = icon; tx.textContent = label; ov.style.opacity = "1"; setVerdict("er", name, conf, ev); },
+        () => { ov.style.opacity = "0"; }
+      ]);
+      return loop(steps, reduced() ? 4200 : 1900);
+    }
+  },
+
+  /* ---------- morphing layouts + bandit ---------- */
+  "adaptive-ui": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">Catalog</div>
+        <div class="appbody"><div class="mini grid" id="au-grid">
+          ${Array.from({length:6},()=>`<div class="mcell"><span class="mthumb"></span><span class="mline"></span></div>`).join("")}
+        </div></div>`)}
+      <div class="demo-side">
+        <p class="hint">${d("layouts")}</p>
+        <div class="demo-verdict">
+          <div class="vh">win rate</div>
+          <div style="padding:.7rem .8rem;display:grid;gap:.5rem" id="au-rates"></div>
+        </div>
+      </div></div>`,
+    init(root) {
+      const g = root.querySelector("#au-grid"), rates = root.querySelector("#au-rates");
+      const modes = ["grid","list","cards","carousel"];
+      const w = { grid: 22, list: 31, cards: 18, carousel: 29 };
+      const paint = active => {
+        rates.innerHTML = modes.map(m => `
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.7rem;margin-bottom:.25rem">
+              <span style="color:${m===active?"var(--accent)":"var(--ink-3)"}">${m}</span>
+              <span style="font-variant-numeric:tabular-nums;color:var(--ink-2)">${w[m]}%</span>
+            </div>
+            <span class="wbar"><i style="width:${w[m]*2.6}%;${m===active?"":"opacity:.45"}"></i></span>
+          </div>`).join("");
+      };
+      let i = 0;
+      paint("grid");
+      return loop([() => {
+        const m = modes[i % modes.length];
+        g.className = "mini " + m;
+        w[m] = Math.min(46, w[m] + 1);
+        paint(m); i++;
+      }], reduced() ? 5000 : 2200);
+    }
+  },
+
+  /* ---------- form friction ---------- */
+  "form-sense": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">${d("signup")}</div>
+        <div class="appbody">
+          <div class="fakefield" data-f="email"><span class="lb">${d("email")}</span><span data-v>—</span></div>
+          <div class="fakefield" data-f="phone"><span class="lb">${d("phone")}</span><span data-v>—</span></div>
+          <div class="fakefield" data-f="card"><span class="lb">${d("card")}</span><span data-v>—</span></div>
+          <label class="lb" style="font-size:.56rem;color:var(--ink-3)">${d("typehere")}</label>
+          <input class="fakeinput" id="fs-live" placeholder="${d("phone")}" inputmode="tel" autocomplete="off" style="margin-top:.2rem">
+          <div style="height:.4rem"></div>
+          <button class="fakebtn">${d("cont")}</button>
+        </div>`)}
+      <div class="demo-side">${verdict("form-sense", "fs")}</div></div>`,
+    init(root) {
+      const f = k => root.querySelector(`[data-f="${k}"]`);
+      const val = (k, v) => f(k).querySelector("[data-v]").textContent = v;
+      const focus = k => root.querySelectorAll(".fakefield").forEach(x => x.classList.toggle("act", x === f(k)));
+
+      /* typing in the live field takes over from the scripted replay */
+      const live = root.querySelector("#fs-live");
+      let prev = 0, corr = 0, dwellStart = 0, paused = false, resumeT = null;
+      const onInput = () => {
+        paused = true; clearTimeout(resumeT);
+        if (!dwellStart) dwellStart = performance.now();
+        if (live.value.length < prev) corr++;
+        prev = live.value.length;
+        setVerdict("fs", corr >= 3 ? "CORRECTIONS" : "DWELL",
+          corr >= 3 ? Math.min(.94, .55 + corr * .08) : null,
+          { field: "phone_live", corrections: corr, chars: prev,
+            dwell_s: ((performance.now() - dwellStart) / 1000).toFixed(1) });
+        resumeT = setTimeout(() => { paused = false; }, 6000);
+      };
+      live.addEventListener("input", onInput);
+      const steps = [
+        () => { focus("email"); val("email","ron@…"); setVerdict("fs","TYPING",null,{ field:"email", dwell_s:1.2 }); },
+        () => { val("email","ron@studio.com"); focus("phone"); setVerdict("fs","TYPING",null,{ field:"phone", dwell_s:0.4 }); },
+        () => { val("phone","+972 5…"); f("phone").classList.add("bad"); setVerdict("fs","CORRECTION",.72,{ field:"phone", corrections:1 }); },
+        () => { val("phone","+972 54…"); setVerdict("fs","CORRECTION",.81,{ field:"phone", corrections:2, dwell_s:9.4 }); },
+        () => { val("phone","+972 5…"); setVerdict("fs","CORRECTION",.9,{ field:"phone", corrections:3, refocus:2 }); },
+        () => { focus(""); f("phone").classList.add("bad");
+                setVerdict("fs","ABANDONED_AT",.94,{ field:"phone", corrections:3, dwell_s:18.6, suggestion:"split country code" }); },
+        () => { root.querySelectorAll(".fakefield").forEach(x => { x.classList.remove("bad","act"); x.querySelector("[data-v]").textContent="—"; }); }
+      ];
+      /* the scripted replay yields while you're typing in the live field */
+      const stop = loop(steps.map(fn => () => { if (!paused) fn(); }), reduced() ? 4000 : 1500);
+      return () => { stop(); live.removeEventListener("input", onInput); clearTimeout(resumeT); };
+    }
+  },
+
+  /* ---------- weekly rhythm ---------- */
+  "rhythm-engine": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">${d("notify")}</div>
+        <div class="appbody"><svg id="re-grid" viewBox="0 0 108 118" style="width:100%"></svg>
+        <p style="font-family:var(--mono);font-size:.62rem;color:var(--ink-3);margin:.5rem 0 0" id="re-cap"></p></div>`)}
+      <div class="demo-side">${verdict("rhythm-engine", "re")}</div></div>`,
+    init(root) {
+      const svg = root.querySelector("#re-grid"), cap = root.querySelector("#re-cap");
+      const days = t("days");
+      let n = 0;
+      const best = { d: 2, h: 8 };
+      return loop([() => {
+        let cells = "";
+        for (let dy = 0; dy < 7; dy++) for (let h = 0; h < 12; h++) {
+          const seed = Math.sin(dy * 2.3 + h * 1.7) * .5 + .5;
+          const grown = Math.min(1, seed * (n / 8));
+          const isBest = dy === best.d && h === best.h && n > 6;
+          cells += `<rect x="${h * 9}" y="${dy * 15 + 4}" width="7.5" height="12" rx="1.8"
+            fill="${isBest ? "var(--series-2)" : "var(--series-1)"}" fill-opacity="${isBest ? 1 : (.08 + grown * .85).toFixed(2)}"/>`;
+        }
+        svg.innerHTML = days.map((x,i)=>`<text x="-1" y="${i*15+13}" font-size="5.5" fill="var(--ink-3)" text-anchor="end" font-family="ui-monospace,monospace">${x}</text>`).join("") +
+          `<g transform="translate(9,0)">${cells}</g>`;
+        cap.textContent = n > 6 ? "Tue 08:00–09:00" : `learning… ${Math.min(100, n * 14)}%`;
+        if (n > 6) setVerdict("re", "BEST_HOUR", .77, { day:"Tue", hour:"08:00", next_open_in_h:16, churn_risk:0.18 });
+        else setVerdict("re", "LEARNING", null, { days_observed: n * 3 });
+        n = n > 9 ? 0 : n + 1;
+      }], reduced() ? 3000 : 900);
+    }
+  },
+
+  /* ---------- screenshot classify ---------- */
+  "screenshot-intelligence": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">Receipt</div>
+        <div class="appbody" id="si-body">
+          <div style="font-size:.66rem;line-height:1.7;color:var(--ink-2)">
+            <b style="color:var(--ink)">CAFE LEVANT</b><br>Tel Aviv · 12 Aug 2026<br>
+            Flat white ×2 &nbsp; ₪28.00<br>Croissant &nbsp; ₪16.00<br>
+            <b style="color:var(--ink)">Total ₪44.00</b>
+          </div>
+          <div id="si-flash" style="position:absolute;inset:0;background:var(--ink);opacity:0;pointer-events:none;transition:opacity .12s"></div>
+        </div>`)}
+      <div class="demo-side">
+        <div class="demo-ctl"><button id="si-go">${d("shutter")}</button></div>
+        ${verdict("screenshot-intelligence", "si")}
+      </div></div>`,
+    init(root) {
+      const flash = root.querySelector("#si-flash"), go = root.querySelector("#si-go");
+      let timers = [];
+      const fire = () => {
+        timers.forEach(clearTimeout); timers = [];
+        flash.style.opacity = ".85";
+        timers.push(setTimeout(() => flash.style.opacity = "0", 130));
+        setVerdict("si", "SCANNING", null, {});
+        timers.push(setTimeout(() => setVerdict("si", "RECEIPT", .93,
+          { merchant:"CAFE LEVANT", total:"₪44.00", date:"2026-08-12", suggested:"add to expenses" }), 700));
+      };
+      go.addEventListener("click", fire);
+      fire();
+      return () => { go.removeEventListener("click", fire); timers.forEach(clearTimeout); };
+    }
+  },
+
+  /* ---------- sensor fusion ---------- */
+  "context-moments": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">Now</div>
+        <div class="appbody">
+          <div style="text-align:center;padding:.6rem 0"><div style="font-size:2rem" id="cm-icon">🚗</div>
+          <p style="font-size:.8rem;font-weight:600;margin:.3rem 0 0" id="cm-name">DRIVING</p></div>
+          <div style="display:grid;gap:.3rem;margin-top:.5rem" id="cm-sensors"></div>
+        </div>`)}
+      <div class="demo-side">${verdict("context-moments", "cm")}</div></div>`,
+    init(root) {
+      const ic = root.querySelector("#cm-icon"), nm = root.querySelector("#cm-name"), sn = root.querySelector("#cm-sensors");
+      const scenes = [
+        ["🚗","DRIVING",.86,{ motion:"vehicle", audio:"bluetooth", speed_kmh:52, screen:"off" }],
+        ["🚶","WALKING",.79,{ motion:"pedestrian", steps_min:98, audio:"headset", screen:"on" }],
+        ["💼","IN_MEETING",.74,{ calendar:"busy", dnd:"on", ambient_db:41, motion:"still" }],
+        ["🛏️","JUST_WOKE_UP",.68,{ since_long_still_min:6, hour:"07:12", screen:"first_unlock" }]
+      ];
+      let i = 0;
+      return loop([() => {
+        const [icon, name, conf, ev] = scenes[i % scenes.length];
+        ic.textContent = icon; nm.textContent = name;
+        sn.innerHTML = Object.entries(ev).map(([k,v]) =>
+          `<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.6rem">
+            <span style="color:var(--ink-3)">${k}</span><span>${v}</span></div>`).join("");
+        setVerdict("cm", name, conf, ev); i++;
+      }], reduced() ? 4500 : 2400);
+    }
+  },
+
+  /* ---------- felt performance ---------- */
+  "perceived-speed": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">${d("feed")}</div>
+        <div class="appbody" id="ps-body"></div>`)}
+      <div class="demo-side">${verdict("perceived-speed", "ps")}</div></div>`,
+    init(root) {
+      const b = root.querySelector("#ps-body");
+      const skel = n => Array.from({length:n},()=>`<div class="mcell" style="opacity:.45"><span class="mthumb"></span><span class="mline"></span></div>`).join("");
+      const real = n => Array.from({length:n},()=>`<div class="mcell"><span class="mthumb" style="background:var(--accent-soft)"></span><span class="mline" style="background:var(--rule)"></span></div>`).join("");
+      const steps = [
+        () => { b.innerHTML = `<div class="mini list">${skel(4)}</div>`; setVerdict("ps","COLD_START",null,{ stage:"process_start" }); },
+        () => { b.innerHTML = `<div class="mini list">${skel(2)}${real(2)}</div>`; setVerdict("ps","RENDERING",null,{ first_frame_ms:280 }); },
+        () => { b.innerHTML = `<div class="mini list">${real(4)}</div>`; setVerdict("ps","TTI",null,{ tti_ms:412, cold_start_ms:940 }); },
+        () => { b.innerHTML = `<div class="mini list">${real(4)}</div><p style="font-family:var(--mono);font-size:.6rem;color:var(--series-2);margin-top:.4rem">jank 3 frames</p>`;
+                setVerdict("ps","JANK",.7,{ dropped_frames:3, guilty:"ImageDecoder.decode", felt_score:72 }); }
+      ];
+      return loop(steps, reduced() ? 3500 : 1400);
+    }
+  },
+
+  /* ---------- nudge at a calm moment ---------- */
+  "discovery-coach": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">Editor</div>
+        <div class="appbody">
+          <div class="mini list">${Array.from({length:4},()=>`<div class="mcell"><span class="mline"></span></div>`).join("")}</div>
+          <div id="dc-tip" style="position:absolute;left:.9rem;right:.9rem;bottom:.7rem;background:var(--accent-soft);
+            border:1px solid var(--accent-line);border-radius:8px;padding:.5rem .6rem;transform:translateY(120%);transition:transform .45s cubic-bezier(.2,.8,.2,1)">
+            <p style="font-size:.66rem;margin:0 0 .35rem;color:var(--ink)">${d("tip")}</p>
+            <button class="fakebtn" style="padding:.3rem;font-size:.64rem">${d("gotit")}</button>
+          </div>
+        </div>`)}
+      <div class="demo-side">${verdict("discovery-coach", "dc")}</div></div>`,
+    init(root) {
+      const tip = root.querySelector("#dc-tip");
+      const steps = [
+        () => { tip.style.transform = "translateY(120%)"; setVerdict("dc","WAITING",null,{ calm_moment:"false", nudges_today:1 }); },
+        () => { setVerdict("dc","CALM_MOMENT",.7,{ idle_s:3.2, no_errors:"true" }); },
+        () => { tip.style.transform = "translateY(0)"; setVerdict("dc","NUDGE_SHOWN",.81,{ feature:"export_pdf", nudges_today:2, cap:3 }); },
+        () => { setVerdict("dc","ACCEPTED",.95,{ feature:"export_pdf", discovered:"true" }); }
+      ];
+      return loop(steps, reduced() ? 3800 : 1800);
+    }
+  },
+
+  /* ---------- built-in stats screen ---------- */
+  "feature-usage": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">${d("stats")}</div>
+        <div class="appbody"><div style="display:grid;gap:.5rem" id="fu-rows"></div></div>`)}
+      <div class="demo-side">${verdict("feature-usage", "fu")}</div></div>`,
+    init(root) {
+      const rows = root.querySelector("#fu-rows");
+      const data = [["export_pdf",142],["share",97],["editor",64],["search",38],["import",12]];
+      let n = 0;
+      return loop([() => {
+        const grow = Math.min(1, n / 5);
+        rows.innerHTML = data.map(([k,v]) => `
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;margin-bottom:.2rem">
+              <span>${k}</span><span style="color:var(--ink-3)">${Math.round(v*grow)}</span></div>
+            <span class="wbar"><i style="width:${(v/142*100*grow).toFixed(0)}%"></i></span>
+          </div>`).join("");
+        setVerdict("fu", "TOP_FEATURE", null, { feature:"export_pdf", uses:Math.round(142*grow), streak_days:9, time_spent:"4h 12m" });
+        n = n > 6 ? 0 : n + 1;
+      }], reduced() ? 3000 : 700);
+    }
+  },
+
+  /* ---------- preferences ---------- */
+  "user-memory": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">${d("prefs")}</div>
+        <div class="appbody" id="um-body"></div>`)}
+      <div class="demo-side">${verdict("user-memory", "um")}</div></div>`,
+    init(root) {
+      const b = root.querySelector("#um-body");
+      const prefs = [["units","metric"],["haptics","true"],["rest_seconds","90"],["theme","dark"]];
+      let n = 1;
+      return loop([() => {
+        b.innerHTML = prefs.slice(0, n).map(([k,v]) => `
+          <div class="fakefield"><span class="lb">${k}</span><span>${v}</span></div>`).join("");
+        setVerdict("um", "PREFERENCE", null, { keys_stored:n, storage:"on-device JSON", bytes:n*38 });
+        n = n >= prefs.length ? 1 : n + 1;
+      }], reduced() ? 3000 : 1100);
+    }
+  },
+
+  /* ---------- funnel ---------- */
+  "flow-learning": {
+    html: `<div class="demo">
+      ${phone(`<div class="appbar">${d("funnel")}</div>
+        <div class="appbody"><div style="display:grid;gap:.45rem" id="fl-rows"></div></div>`)}
+      <div class="demo-side">${verdict("flow-learning", "fl")}</div></div>`,
+    init(root) {
+      const rows = root.querySelector("#fl-rows");
+      const steps = [["open",100],["plan",78],["details",61],["payment",24],["done",21]];
+      let n = 0;
+      return loop([() => {
+        const shown = Math.min(steps.length, n + 1);
+        rows.innerHTML = steps.slice(0, shown).map(([k,v],i) => {
+          const drop = i > 0 ? steps[i-1][1] - v : 0;
+          const bad = drop > 30;
+          return `<div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;margin-bottom:.2rem">
+              <span>${k}</span><span style="color:${bad?"var(--series-2)":"var(--ink-3)"}">${v}%${bad?" ↓":""}</span></div>
+            <span class="wbar"><i style="width:${v}%;${bad?"background:var(--series-2)":""}"></i></span></div>`;
+        }).join("");
+        if (shown === steps.length) setVerdict("fl","FUNNEL_LEAK",.88,{ between:"details → payment", lost_pct:37, recommendation:"show total before payment" });
+        else setVerdict("fl","MINING",null,{ screens_seen: shown });
+        n = n >= steps.length ? 0 : n + 1;
+      }], reduced() ? 3000 : 1000);
+    }
+  }
+});
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+function dashboardMock() {
+  const days = Array.from({length:30},(_,i)=>`${i+1}`);
+  return `
+  <div class="dash">
+    <div class="dash-bar">
+      <span class="app">FitStation</span><span class="sep">·</span>
+      <span style="font-size:.76rem;color:var(--ink-3)">${t("dash.env")}</span>
+      <div class="seg"><button class="on">30d</button><button>90d</button><button>1y</button></div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="lab">${t("dash.t1")}</div><div class="num">24</div><div class="delta up">${t("dash.d1")}</div></div>
+      <div class="tile"><div class="lab">${t("dash.t2")}</div><div class="num">3.1%</div><div class="delta up">${t("dash.d2")}</div></div>
+      <div class="tile"><div class="lab">${t("dash.t3")}</div><div class="num">412<small style="font-size:.8rem;color:var(--ink-3)">ms</small></div><div class="delta flat">${t("dash.d3")}</div></div>
+      <div class="tile"><div class="lab">${t("dash.t4")}</div><div class="num">1,904</div><div class="delta down">${t("dash.d4")}</div></div>
+    </div>
+
+    <div class="charts">
+      <div class="chart">
+        <h4>${t("dash.c1")}</h4><div class="sub">${t("dash.c1s")}</div>
+        <div class="chart-wrap" data-chart="fr">
+          ${lineChart({ data:[D_FR], labels:days, colors:["var(--series-1)"] })}<div class="tip"></div>
+        </div>
+        <button class="toggle-data" data-table="fr">${t("dash.show")}</button>
+        <div hidden id="tbl-fr">
+          <table class="data"><thead><tr><th>${t("dash.day")}</th><th>${t("dash.score")}</th></tr></thead><tbody>
+            ${D_FR.slice(0,6).map((v,i)=>`<tr><td>${i+1}</td><td>${v}</td></tr>`).join("")}
+            <tr><td colspan="2" style="color:var(--ink-3)">${t("dash.rows")}</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <div class="chart">
+        <h4>${t("dash.c2")}</h4><div class="sub">${t("dash.c2s")}</div>
+        ${barsH([
+          {k:"TASK_COMPLETED",v:44},{k:"SWITCHED_AWAY",v:21},{k:"LOST_INTEREST",v:14},
+          {k:"SCREEN_OFF",v:11},{k:"RAGE_QUIT",v:6},{k:"INCOMING_CALL",v:4}])}
+      </div>
+
+      <div class="chart">
+        <h4>${t("dash.c3")}</h4><div class="sub">${t("dash.c3s")}</div>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--series-1)"></i>${t("dash.rage")}</span>
+          <span><i class="swatch" style="background:var(--series-2)"></i>${t("dash.hes")}</span>
+        </div>
+        <div class="chart-wrap" data-chart="cmp">
+          ${lineChart({ data:[D_RAGE,D_HES], labels:days, colors:["var(--series-1)","var(--series-2)"] })}<div class="tip"></div>
+        </div>
+      </div>
+
+      <div class="chart">
+        <h4>${t("dash.c4")}</h4><div class="sub">${t("dash.c4s")}</div>
+        <div class="chart-wrap" data-chart="heat">${heat(12)}<div class="tip"></div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function heroView() {
+  return `
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">${t("hero.eyebrow")}</p>
+        <h1 class="thesis">${t("hero.h1")}</h1>
+        <p class="lede">${t("hero.lede")}</p>
+
+        <div class="install-strip">
+          <div class="install-tabs" role="tablist">
+            <button class="on" data-inst="gradle" role="tab" aria-selected="true">gradle</button>
+            <button data-inst="spm" role="tab" aria-selected="false">swift</button>
+          </div>
+          <div class="install-body">
+            <code id="instcode" dir="ltr">implementation("io.github.rongo270:intent-engine:0.1.0")</code>
+            <button class="copy" id="copybtn">copy</button>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#/android">${t("hero.cta1")}</a>
+          <a class="btn btn-quiet" href="#/premium">${t("hero.cta2")} ${t("fwd")}</a>
+        </div>
+      </div>
+
+      <div class="scope">
+        <div class="scope-head">
+          <span class="dot live"></span><span class="t">${t("hero.live")}</span>
+          <span class="r" id="scopeclock">00:00</span>
+        </div>
+        <canvas id="trace" width="600" height="184" aria-label="live trace"></canvas>
+        <div class="readouts">
+          <div class="ro" data-ro="rage"><span class="k">RAGE_TAP</span><span class="v" id="v-rage">0.00</span><span class="meter"><i id="m-rage" class="amber"></i></span></div>
+          <div class="ro" data-ro="hes"><span class="k">HESITATION</span><span class="v" id="v-hes">0.00</span><span class="meter"><i id="m-hes"></i></span></div>
+          <div class="ro" data-ro="scan"><span class="k">SCAN_SCROLL</span><span class="v" id="v-scan">0.00</span><span class="meter"><i id="m-scan"></i></span></div>
+          <div class="ro" data-ro="fr"><span class="k word">${t("hero.fr")}</span><span class="v" id="v-fr">0.00</span><span class="meter"><i id="m-fr" class="amber"></i></span></div>
+        </div>
+        <div class="scope-foot">${t("hero.foot")}</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="tickrule"></div></div>
+
+  <section>
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">${t("pr.eyebrow")}</p><h2>${t("pr.h2")}</h2><p class="lede">${t("pr.lede")}</p>
+      </div>
+      <div class="principles rv">
+        ${[1,2,3,4].map(i => `<div class="pr"><h3>${t("pr."+i+"t")}</h3><p>${t("pr."+i+"b")}</p></div>`).join("")}
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">${t("cl.eyebrow")}</p><h2>${t("cl.h2")}</h2><p class="lede">${t("cl.lede")}</p>
+      </div>
+      <div style="display:grid;gap:3.2rem">
+        ${["grip-sense","exit-reason","adaptive-ui"].map(id => {
+          const s = SDKS.find(x => x.id === id);
+          return `<div class="rv">
+            <div class="feature-pair" style="margin-bottom:1.4rem">
+              <div>
+                <h3 class="mono ltr" style="font-size:1.05rem;margin-bottom:.4rem">${s.id}</h3>
+                <p style="color:var(--ink-2);font-size:.88rem;margin:0 0 .8rem">${esc(long(s))}</p>
+                <div class="signals">${s.signals.slice(0,4).map(x=>`<span class="chip">${x}</span>`).join("")}</div>
+                <p style="margin:.9rem 0 0"><a href="#/sdk/${s.id}">${t("cl.open")} <span class="ltr">${s.id}</span> ${t("fwd")}</a></p>
+              </div>
+              <div>${codeBlock(s.plat === "both" ? "swift" : "kotlin", s.code)}</div>
+            </div>
+            <div data-demo="${s.id}"></div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="tickrule"></div></div>
+
+  <section>
+    <div class="wrap">
+      <div class="sec-head rv">
+        <p class="eyebrow">${t("pm.eyebrow")}</p><h2>${t("pm.h2")}</h2><p class="lede">${t("pm.lede")}</p>
+      </div>
+      <div class="rv">${dashboardMock()}</div>
+      <p style="margin-top:1.4rem"><a class="btn btn-primary" href="#/premium">${t("pm.cta")} ${t("fwd")}</a></p>
+    </div>
+  </section>`;
+}
+
+function catalogView(plat) {
+  const isIos = plat === "ios";
+  const list = SDKS.filter(s => isIos ? (s.plat === "ios" || s.plat === "both") : (s.plat === "android" || s.plat === "both"));
+  return `
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">${isIos ? "Swift Package Manager" : "Maven Central"}</p>
+        <h2>${isIos ? t("cat.iosH") : t("cat.androidH")} <span class="mono" style="color:var(--ink-3);font-size:1rem">(${list.length})</span></h2>
+        <p class="lede">${isIos ? t("cat.iosLede") : t("cat.androidLede")}</p>
+      </div>
+      <div style="margin-bottom:1.6rem">
+        ${isIos
+          ? codeBlock("Package.swift", `.package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0")`)
+          : codeBlock("app/build.gradle.kts", `implementation("io.github.rongo270:${list[0].id}:0.1.0")`)}
+      </div>
+      <div class="rows">
+        ${list.map(s => `<button class="row" data-goto="${s.id}">
+          <span class="sd"></span><span class="nm">${s.id}</span>
+          <span class="ds">${esc(tag(s))}</span><span class="pf">${PLAT[LANG][s.plat]}</span>
+        </button>`).join("")}
+      </div>
+      ${isIos ? `<p class="note">${t("cat.iosNote")}</p>` : ""}
+    </div>
+  </section>`;
+}
+
+function detailView(id) {
+  const s = SDKS.find(x => x.id === id);
+  if (!s) return `<section class="wrap"><p>404</p></section>`;
+  const install = s.plat === "both"
+    ? `.package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0")`
+    : `implementation("io.github.rongo270:${s.id}:0.1.0")`;
+  return `
+  <section>
+    <div class="wrap">
+      <button class="back" data-back>${t("back")} ${t("d.back")}</button>
+      <div class="detail-top">
+        <div>
+          <p class="eyebrow">${PLAT[LANG][s.plat]}</p>
+          <h2 class="mono ltr" style="font-size:var(--step-2);letter-spacing:-.03em;margin:.4rem 0 .6rem">${s.id}</h2>
+          <p class="lede" style="font-size:1.02rem">${esc(tag(s))}</p>
+          <p style="color:var(--ink-2);font-size:.92rem">${esc(long(s))}</p>
+          <div class="signals">${s.signals.map(x=>`<span class="chip">${x}</span>`).join("")}</div>
+        </div>
+        <div>
+          <dl class="kv">
+            <div><dt>${t("d.group")}</dt><dd>io.github.rongo270</dd></div>
+            <div><dt>${t("d.artifact")}</dt><dd>${s.id}</dd></div>
+            <div><dt>${t("d.version")}</dt><dd>0.1.0</dd></div>
+            <div><dt>${t("d.package")}</dt><dd>dev.rgkit.${s.id.replace(/-/g,"")}</dd></div>
+            <div><dt>${t("d.minsdk")}</dt><dd>${s.plat === "both" ? "24 · iOS 15" : "24"}</dd></div>
+            <div><dt>${t("d.perms")}</dt><dd>${t("d.none")}</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div style="margin-top:2.6rem" data-demo="${s.id}">
+        <div class="codehead">${t("d.running")}</div>
+      </div>
+
+      <div style="margin-top:2.4rem;display:grid;gap:1.4rem">
+        <div>${codeBlock(t("d.install"), install)}</div>
+        <div>${codeBlock(s.plat === "both" ? "swift" : "kotlin", s.code)}</div>
+        <div>${codeBlock(t("d.every"), `${CLS[s.id]}.exportJson()\n${CLS[s.id]}.reset()`)}</div>
+      </div>
+
+      <div style="margin-top:2.4rem;border:1px solid var(--rule);border-radius:4px;background:var(--panel);padding:1.3rem">
+        <span class="badge">${t("d.planned")}</span>
+        <p style="margin:.8rem 0 0;color:var(--ink-2)">${esc(prem(s))}</p>
+        <p style="margin:.7rem 0 0"><a href="#/premium">${t("d.seedash")} ${t("fwd")}</a></p>
+      </div>
+    </div>
+  </section>`;
+}
+
+function premiumView() {
+  const tier = (h, price, small, items, hi) => `
+    <div class="plan${hi ? " hi" : ""}">
+      <h3>${h}</h3>
+      <div class="price">${price}<small>${small}</small></div>
+      <ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>
+    </div>`;
+  return `
+  <section>
+    <div class="wrap">
+      <span class="badge">${t("p.badge")}</span>
+      <div class="sec-head" style="margin-top:.9rem"><h2>${t("p.h2")}</h2><p class="lede">${t("p.lede")}</p></div>
+
+      ${dashboardMock()}
+
+      <div style="margin-top:3rem">
+        <div class="sec-head">
+          <p class="eyebrow">${t("p.access")}</p>
+          <h2 style="font-size:var(--step-1)">${t("p.keys")}</h2>
+          <p class="lede">${t("p.keysLede")}</p>
+        </div>
+        <div style="border:1px solid var(--rule);border-radius:4px;background:var(--panel);overflow:hidden">
+          <div class="keyrow" style="background:var(--panel-2)">
+            <span style="font-size:.76rem;color:var(--ink-3)">${t("p.key")}</span>
+            <span style="font-size:.76rem;color:var(--ink-3)">${t("p.env")}</span>
+            <span style="font-size:.76rem;color:var(--ink-3)">${t("p.used")}</span>
+          </div>
+          <div class="keyrow">
+            <span><span class="kname ltr">FitStation</span><br><span class="kval">rgk_live_8f2a••••••••••••4c71</span></span>
+            <span class="pill live">${t("p.live")}</span><span class="kmeta">${t("p.ago2")}</span>
+          </div>
+          <div class="keyrow">
+            <span><span class="kname ltr">FitStation — debug</span><br><span class="kval">rgk_test_11de••••••••••••90ab</span></span>
+            <span class="pill test">${t("p.test")}</span><span class="kmeta">${t("p.yest")}</span>
+          </div>
+          <div class="keyrow">
+            <span><span class="kname ltr">Street GymRat</span><br><span class="kval">rgk_live_c40b••••••••••••2f18</span></span>
+            <span class="pill live">${t("p.live")}</span><span class="kmeta">${t("p.ago14")}</span>
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          ${codeBlock(t("p.optin"), `RgkitCloud.init(this, apiKey = BuildConfig.RGKIT_KEY)
+
+// Nothing uploads until the user agrees:
+RgkitCloud.setConsent(true)
+RgkitCloud.enable(IntentEngine, ExitReason)`)}
+        </div>
+        <p class="note">${t("p.consent")}</p>
+      </div>
+
+      <div style="margin-top:3rem">
+        <div class="sec-head"><p class="eyebrow">${t("p.ifships")}</p><h2 style="font-size:var(--step-1)">${t("p.tiers")}</h2></div>
+        <div class="plans">
+          ${tier(t("p.t1"), t("p.free"), t("p.forever"), [t("p.t1a"),t("p.t1b"),t("p.t1c"),t("p.t1d")])}
+          ${tier(t("p.t2"), t("p.tbd"), t("p.perapp"), [t("p.t2a"),t("p.t2b"),t("p.t2c"),t("p.t2d")], true)}
+          ${tier(t("p.t3"), t("p.tbd"), t("p.permo"), [t("p.t3a"),t("p.t3b"),t("p.t3c"),t("p.t3d")])}
+        </div>
+
+        <div style="margin-top:1.6rem;max-width:560px">
+          <p style="color:var(--ink-2);font-size:.9rem;margin:0">${t("p.want")}</p>
+          <form class="waitlist" id="wl">
+            <input type="email" placeholder="${t("p.email")}" aria-label="email" required dir="ltr">
+            <button class="btn btn-primary" type="submit">${t("p.request")}</button>
+          </form>
+          <p id="wlmsg" style="font-size:.82rem;color:var(--good);margin:.6rem 0 0" hidden>${t("p.sent")}</p>
+        </div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function aboutView() {
+  return `
+  <section>
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">${t("a.eyebrow")}</p><h2>${t("a.h2")}</h2></div>
+      <div class="about-grid">
+        <div><p>${t("a.p1")}</p><p>${t("a.p2")}</p><p>${t("a.p3")}</p></div>
+        <div>
+          <dl class="kv">
+            <div><dt>${t("a.sdks")}</dt><dd>13</dd></div>
+            <div><dt>${t("a.plats")}</dt><dd>Android · iOS</dd></div>
+            <div><dt>${t("a.amin")}</dt><dd>API 24</dd></div>
+            <div><dt>${t("a.imin")}</dt><dd>15.0</dd></div>
+            <div><dt>${t("a.lic")}</dt><dd>Apache 2.0</dd></div>
+            <div><dt>${t("a.ver")}</dt><dd>0.1.0</dd></div>
+            <div><dt>${t("a.grp")}</dt><dd>io.github.rongo270</dd></div>
+            <div><dt>${t("a.pkgs")}</dt><dd>dev.rgkit.*</dd></div>
+          </dl>
+          <p class="note" style="margin-top:1.2rem">${t("a.note")}</p>
+        </div>
+      </div>
+    </div>
+  </section>`;
+}
+
+/* ============================================================
+   HERO INSTRUMENT
+   ============================================================ */
+/* mount every [data-demo] in a subtree; returns a combined cleanup */
+function mountDemos(root) {
+  const demos = buildDemos();
+  const stops = [];
+  root.querySelectorAll("[data-demo]").forEach(host => {
+    const demo = demos[host.dataset.demo];
+    if (!demo) { host.remove(); return; }
+    const box = document.createElement("div");
+    box.innerHTML = demo.html;
+    host.appendChild(box);
+    try {
+      const stop = demo.init(box);
+      if (typeof stop === "function") stops.push(stop);
+    } catch (err) { console.warn("demo failed:", host.dataset.demo, err); }
+  });
+  return () => stops.forEach(s => { try { s(); } catch {} });
+}
+
+let traceStop = null;
+let demoStop = null;
+function startTrace() {
+  const cv = $("#trace"); if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const css = getComputedStyle(document.documentElement);
+  const pick = n => css.getPropertyValue(n).trim() || "#888";
+
+  const N = 150, buf = new Array(N).fill(0);
+  let vel = 0, lastX = 0, lastY = 0, lastMove = performance.now();
+  let clicks = [], rage = 0, hes = 0, scan = 0, fr = 0, raf = null;
+  const t0 = performance.now();
+
+  const onMove = e => {
+    const d = Math.min(60, Math.hypot(e.clientX-lastX, e.clientY-lastY));
+    lastX = e.clientX; lastY = e.clientY;
+    vel = vel*.7 + d*.3; lastMove = performance.now();
+  };
+  const onDown = e => {
+    const now = performance.now();
+    clicks = clicks.filter(c => now-c.t < 900);
+    clicks.push({t:now, x:e.clientX, y:e.clientY});
+    if (clicks.length >= 3) {
+      const sp = Math.max(...clicks.map(c => Math.hypot(c.x-clicks[0].x, c.y-clicks[0].y)));
+      if (sp < 90) rage = Math.min(1, rage+.34);
+    }
+    vel = 55;
+  };
+  addEventListener("pointermove", onMove, {passive:true});
+  addEventListener("pointerdown", onDown, {passive:true});
+
+  const setRO = (k, v, hit) => {
+    const el = $("#v-"+k), m = $("#m-"+k);
+    if (el) el.textContent = v.toFixed(2);
+    if (m) m.style.width = (v*100).toFixed(0)+"%";
+    const row = document.querySelector(`.ro[data-ro="${k}"]`);
+    if (row) row.classList.toggle("hit", !!hit);
+  };
+
+  function frame() {
+    const now = performance.now(), idle = (now-lastMove)/1000;
+    hes  = idle > 1.4 ? Math.min(1,(idle-1.4)/2.6) : Math.max(0, hes-.04);
+    scan = Math.min(1, vel/34);
+    rage = Math.max(0, rage-.012);
+    fr   = Math.min(1, rage*.58 + hes*.26 + scan*.18);
+
+    buf.push(vel); if (buf.length > N) buf.shift();
+    vel *= .90;
+
+    const w = cv.width, h = cv.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle = pick("--grid"); ctx.lineWidth = 1;
+    for (let i=1;i<4;i++){ const y=(h/4)*i; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+    ctx.beginPath();
+    buf.forEach((v,i) => {
+      const x = (i/(N-1))*w, y = h-6-Math.min(h-12,(v/60)*(h-16));
+      i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+    });
+    ctx.strokeStyle = pick("--series-1"); ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
+
+    if (rage > .25) {
+      ctx.fillStyle = pick("--series-2"); ctx.globalAlpha = Math.min(.9, rage);
+      ctx.fillRect(w-4,0,4,h); ctx.globalAlpha = 1;
+    }
+
+    setRO("rage",rage,rage>.5); setRO("hes",hes,hes>.5);
+    setRO("scan",scan,scan>.6); setRO("fr",fr,fr>.5);
+
+    const el = Math.floor((now-t0)/1000), clk = $("#scopeclock");
+    if (clk) clk.textContent = `${String(Math.floor(el/60)).padStart(2,"0")}:${String(el%60).padStart(2,"0")}`;
+    raf = requestAnimationFrame(frame);
+  }
+
+  if (reduce) {
+    ctx.strokeStyle = pick("--series-1"); ctx.lineWidth = 2; ctx.beginPath();
+    for (let i=0;i<N;i++){ const x=(i/(N-1))*cv.width, y=cv.height/2+Math.sin(i/9)*18; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.stroke();
+    setRO("rage",.12); setRO("hes",.30); setRO("scan",.21); setRO("fr",.19);
+  } else frame();
+
+  traceStop = () => {
+    if (raf) cancelAnimationFrame(raf);
+    removeEventListener("pointermove", onMove);
+    removeEventListener("pointerdown", onDown);
+  };
+}
+
+function wirePad() {
+  const pad = $("#pad"); if (!pad) return;
+  const txt = $("#padtext");
+  let taps = [], idleT;
+  pad.addEventListener("pointerdown", e => {
+    const r = pad.getBoundingClientRect();
+    const dot = document.createElement("span");
+    dot.className = "ripple";
+    dot.style.left = (e.clientX-r.left)+"px"; dot.style.top = (e.clientY-r.top)+"px";
+    pad.appendChild(dot); setTimeout(()=>dot.remove(), 700);
+
+    const now = performance.now();
+    taps = taps.filter(x => now-x < 900); taps.push(now);
+    if (taps.length >= 3) {
+      txt.textContent = `RAGE_TAP  ${Math.min(.97,.4+taps.length*.12).toFixed(2)}`;
+      txt.style.color = "var(--series-2)";
+    } else {
+      txt.textContent = `${taps.length} ${t("d.taps")}`;
+      txt.style.color = "var(--ink-3)";
+    }
+  });
+  pad.addEventListener("pointerup", () => {
+    clearTimeout(idleT);
+    idleT = setTimeout(() => { txt.textContent = "HESITATION  0.61"; txt.style.color = "var(--accent)"; }, 1800);
+  });
+}
+
+/* ============================================================
+   CHART INTERACTION
+   ============================================================ */
+function wireCharts(root) {
+  root.querySelectorAll(".chart-wrap").forEach(wrap => {
+    const tip = wrap.querySelector(".tip"); if (!tip) return;
+    const svg = wrap.querySelector("svg"), cross = wrap.querySelector(".cross");
+
+    const show = (html, x, y) => {
+      tip.innerHTML = html; tip.classList.add("on");
+      const wr = wrap.getBoundingClientRect();
+      tip.style.left = Math.min(wr.width-tip.offsetWidth-6, Math.max(4, x-tip.offsetWidth/2))+"px";
+      tip.style.top  = Math.max(2, y-tip.offsetHeight-10)+"px";
+    };
+    const hide = () => { tip.classList.remove("on"); if (cross) cross.setAttribute("opacity","0"); };
+
+    wrap.querySelectorAll(".hits rect").forEach(r => {
+      r.addEventListener("pointerenter", () => {
+        const i = +r.dataset.i;
+        const sr = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+        const vx = +r.getAttribute("x") + (+r.getAttribute("width"))/2;
+        if (cross) { cross.setAttribute("x1",vx); cross.setAttribute("x2",vx); cross.setAttribute("opacity",".55"); }
+        const cx = sr.left - wr.left + vx * (sr.width / svg.viewBox.baseVal.width);
+        const body = wrap.dataset.chart === "cmp"
+          ? `<span class="tk">${t("dash.rage")}</span> ${D_RAGE[i]}<br><span class="tk">${t("dash.hes")}</span> ${D_HES[i]}`
+          : `<span class="tk">${t("dash.score")}</span> ${D_FR[i]}`;
+        show(`<b>${t("dash.day")} ${r.dataset.label}</b><br>${body}`, cx, 40);
+      });
+    });
+    wrap.addEventListener("pointerleave", hide);
+
+    wrap.querySelectorAll("[data-tip]").forEach(el => {
+      el.addEventListener("pointerenter", e => {
+        const wr = wrap.getBoundingClientRect();
+        show(el.dataset.tip, e.clientX-wr.left, e.clientY-wr.top);
+      });
+    });
+  });
+
+  root.querySelectorAll("[data-tip]").forEach(el => { if (!el.closest(".chart-wrap")) el.title = el.dataset.tip; });
+
+  root.querySelectorAll(".toggle-data").forEach(b => {
+    b.addEventListener("click", () => {
+      const tb = root.querySelector("#tbl-"+b.dataset.table); if (!tb) return;
+      tb.hidden = !tb.hidden;
+      b.textContent = tb.hidden ? t("dash.show") : t("dash.hide");
+    });
+  });
+}
+
+/* ============================================================
+   ROUTER + LANGUAGE
+   ============================================================ */
+function applyChrome() {
+  const html = document.documentElement;
+  html.setAttribute("lang", LANG);
+  html.setAttribute("dir", t("dir"));
+  document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
+  $("#langbtn").textContent = t("nav.lang");
+  $("#ghlink").textContent  = t("nav.github");
+  $("#ft-tag").textContent  = t("ft.tag");
+}
+
+function render() {
+  if (traceStop) { traceStop(); traceStop = null; }
+  if (demoStop)  { demoStop();  demoStop = null; }
+  const hash = location.hash.replace(/^#/,"") || "/";
+  const app = $("#app");
+  let nav = "";
+
+  if (hash.startsWith("/sdk/")) {
+    const id = hash.slice(5);
+    app.innerHTML = detailView(id);
+    const s = SDKS.find(x => x.id === id);
+    nav = s && s.plat === "ios" ? "ios" : (s && s.plat === "both" ? "" : "android");
+    wirePad();
+  } else if (hash === "/android") { app.innerHTML = catalogView("android"); nav = "android"; }
+  else if (hash === "/ios")       { app.innerHTML = catalogView("ios");     nav = "ios"; }
+  else if (hash === "/premium")   { app.innerHTML = premiumView();          nav = "premium"; }
+  else if (hash === "/about")     { app.innerHTML = aboutView();            nav = "about"; }
+  else { app.innerHTML = heroView(); startTrace(); wireInstall(); }
+
+  document.querySelectorAll(".navlinks a").forEach(a => a.classList.toggle("on", a.dataset.nav === nav));
+
+  demoStop = mountDemos(app);
+  wireCharts(app);
+  reveal(app);
+
+  app.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => location.hash = "#/sdk/"+b.dataset.goto));
+  app.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", () => history.back()));
+
+  const wl = $("#wl");
+  if (wl) wl.addEventListener("submit", e => { e.preventDefault(); $("#wlmsg").hidden = false; wl.reset(); });
+
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
+function wireInstall() {
+  const snippets = {
+    gradle: 'implementation("io.github.rongo270:intent-engine:0.1.0")',
+    spm: '.package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0")'
+  };
+  document.querySelectorAll("[data-inst]").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("[data-inst]").forEach(x => {
+        x.classList.toggle("on", x === b);
+        x.setAttribute("aria-selected", x === b ? "true" : "false");
+      });
+      $("#instcode").textContent = snippets[b.dataset.inst];
+    });
+  });
+  const cb = $("#copybtn");
+  if (cb) cb.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("#instcode").textContent); cb.textContent = "✓"; }
+    catch { cb.textContent = "⌘C"; }
+    setTimeout(() => cb.textContent = "copy", 1600);
+  });
+}
+
+$("#langbtn").addEventListener("click", () => {
+  LANG = LANG === "en" ? "he" : "en";
+  localStorage.setItem("rgkit.lang", LANG);
+  applyChrome();
+  render();
+});
+$("#ghlink").addEventListener("click", () => window.open(REPO, "_blank", "noopener"));
+addEventListener("hashchange", render);
+
+applyChrome();
+render();
+</script>
+</body>
+</html>

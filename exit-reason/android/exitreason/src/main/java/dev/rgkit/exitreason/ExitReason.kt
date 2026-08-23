@@ -246,7 +246,12 @@ object ExitReason {
         }, config.settleMs)
     }
 
-    private fun decide(
+    /**
+     * Pure given the collected session facts — with no [appContext] the
+     * environment probes below fall back to their defaults, which is what
+     * lets unit tests drive the precedence rules directly.
+     */
+    internal fun decide(
         exitAt: Long,
         sessionMs: Long,
         idleMs: Long,

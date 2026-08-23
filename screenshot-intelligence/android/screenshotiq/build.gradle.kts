@@ -21,11 +21,21 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    testOptions {
+        // Lets unit tests run on the JVM: android.util.Log calls no-op
+        // instead of throwing.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
     // On-device OCR — bundled model, no API key, no network. Adds ~4 MB.
     implementation("com.google.mlkit:text-recognition:16.0.1")
+
+    testImplementation("junit:junit:4.13.2")
+    // Real org.json for JVM unit tests (the android.jar copy is a stub).
+    testImplementation("org.json:json:20240303")
 }
 
 // Feeds <description> in the published POM.
