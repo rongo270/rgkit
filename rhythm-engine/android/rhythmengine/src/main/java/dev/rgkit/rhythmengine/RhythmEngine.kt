@@ -108,22 +108,27 @@ object RhythmEngine {
     fun bestTimeToEngage(withinHours: Int = 24, top: Int = 3, now: Long = System.currentTimeMillis()): List<EngageWindow> {
         synchronized(lock) {
             if (totalOpens < 10) return emptyList()
-            val peak = hourOfWeek.max()
+            // Smooth with neighbours so a 7:58pm-often user scores 8pm too.
+            fun smoothed(index: Int): Double =
+                hourOfWeek[index] * 0.7 +
+                    hourOfWeek[(index + 167) % 168] * 0.15 +
+                    hourOfWeek[(index + 1) % 168] * 0.15
+
+            // Normalised against the best *smoothed* hour, so this user's own
+            // peak scores the documented 1.0. Dividing by the raw peak instead
+            // capped a lone spike at 0.7, since smoothing gives 30% of every
+            // hour's weight to its neighbours.
+            val peak = (0 until 168).maxOf { smoothed(it) }
             if (peak <= 0.0) return emptyList()
             val cal = Calendar.getInstance()
             val windows = ArrayList<EngageWindow>()
             for (offset in 0 until withinHours) {
                 cal.timeInMillis = now + offset * 3_600_000L
                 cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
-                val how = hourOfWeekIndex(cal)
-                // Smooth with neighbors so a 7:58pm-often user scores 8pm too.
-                val raw = hourOfWeek[how] * 0.7 +
-                    hourOfWeek[(how + 167) % 168] * 0.15 +
-                    hourOfWeek[(how + 1) % 168] * 0.15
                 windows += EngageWindow(
                     startAt = cal.timeInMillis,
                     hourOfDay = cal.get(Calendar.HOUR_OF_DAY),
-                    score = ((raw / peak) * 100).toInt() / 100.0,
+                    score = ((smoothed(hourOfWeekIndex(cal)) / peak) * 100).toInt() / 100.0,
                 )
             }
             return windows.sortedByDescending { it.score }.take(top)

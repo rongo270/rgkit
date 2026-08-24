@@ -65,8 +65,8 @@ class AdaptiveUiTests {
         AdaptiveUi.force("feed", LayoutStyle.GRID)
         showing(dwellMs = 1_500, clicks = 1)
 
-        // One of three taps: 0.6 × 1/3, which stats() truncates to 0.199.
-        assertEquals(0.199, meanFor(LayoutStyle.GRID), 1e-9)
+        // One of three taps: 0.6 × 1/3, reported to three decimals.
+        assertEquals(0.2, meanFor(LayoutStyle.GRID), 1e-9)
     }
 
     @Test

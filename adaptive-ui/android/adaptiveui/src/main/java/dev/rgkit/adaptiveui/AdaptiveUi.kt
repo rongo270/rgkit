@@ -8,6 +8,7 @@ import java.util.Random
 import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 /** The layouts the engine can choose between. */
@@ -166,7 +167,9 @@ object AdaptiveUi {
     /** Learning state per style for a collection. */
     fun stats(collectionId: String): Map<LayoutStyle, ArmStats> = synchronized(lock) {
         (arms[collectionId] ?: emptyMap()).mapValues { (_, arm) ->
-            ArmStats(arm.n, (arm.mean * 1000).toInt() / 1000.0)
+            // Rounded, not truncated: a mean of 0.6 × 1/3 is 0.19999… and
+            // truncation used to report it as 0.199.
+            ArmStats(arm.n, (arm.mean * 1000).roundToInt() / 1000.0)
         }
     }
 
@@ -175,7 +178,7 @@ object AdaptiveUi {
         val styleArms = arms[collectionId] ?: return "No data yet for '$collectionId'."
         if (styleArms.isEmpty()) return "No data yet for '$collectionId'."
         val parts = styleArms.entries.sortedByDescending { it.value.mean }.map { (style, arm) ->
-            "${style.label}: avg ${(arm.mean * 100).toInt()}% over ${arm.n} showings"
+            "${style.label}: avg ${(arm.mean * 100).roundToInt()}% over ${arm.n} showings"
         }
         val leader = styleArms.maxByOrNull { it.value.mean }!!
         "'$collectionId' → currently favors ${leader.key.label}. " + parts.joinToString("; ")

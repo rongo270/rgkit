@@ -82,15 +82,15 @@ class RhythmEngineTests {
     @Test
     fun neighbouringHoursInheritSomeOfThePeak() {
         // Smoothing is 0.7 self + 0.15 each side, so 19:00 and 21:00 score
-        // without a single open of their own — and the peak itself tops out
-        // at 0.7 when its neighbours are empty.
+        // without a single open of their own, while the habitual hour itself
+        // is this user's 1.0.
         for (week in 0 until 12) RhythmEngine.onAppOpen(at(week * 7, 20))
 
         val byHour = RhythmEngine.bestTimeToEngage(withinHours = 24, top = 24, now = at(84, 12))
             .associateBy { it.hourOfDay }
-        assertEquals(0.7, byHour.getValue(20).score, 1e-9)
-        assertEquals(0.15, byHour.getValue(19).score, 1e-9)
-        assertEquals(0.15, byHour.getValue(21).score, 1e-9)
+        assertEquals(1.0, byHour.getValue(20).score, 1e-9)
+        assertEquals(0.21, byHour.getValue(19).score, 1e-9) // 0.15 / 0.7
+        assertEquals(0.21, byHour.getValue(21).score, 1e-9)
         assertEquals(0.0, byHour.getValue(3).score, 1e-9)
     }
 
