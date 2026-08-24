@@ -240,7 +240,7 @@ class DiscoveryCoachTests {
     }
 
     @Test
-    fun aFeatureDismissedTwiceIsDroppedForGood() {
+    fun aTwiceDismissedFeatureComesBackOnlyAfterItsMonthIsUp() {
         DiscoveryCoach.config = CoachConfig(onePerSession = false, minGapMs = 0, maxPerDay = 99)
         DiscoveryCoach.register(listOf(feature("swipe_to_archive")))
         sessions(3)
@@ -250,12 +250,27 @@ class DiscoveryCoachTests {
             DiscoveryCoach.nudgeDismissed("swipe_to_archive")
             now += 10 * day
         }
+        assertNull("still inside the 30-day suppression", nudge())
 
-        // Two showings and two dismissals sink the score below every other
-        // candidate — the month of suppression passes and it still stays quiet.
-        assertNull(nudge())
-        now += 60 * day
-        assertNull(nudge())
+        now += 25 * day
+        // Two showings and two dismissals put its score below zero; that must
+        // cost it its rank, not its eligibility.
+        assertNotNull(nudge())
+    }
+
+    @Test
+    fun aBadlyScoringFeatureStillLosesToABetterOne() {
+        DiscoveryCoach.config = CoachConfig(onePerSession = false, minGapMs = 0, maxPerDay = 99)
+        DiscoveryCoach.register(listOf(feature("rejected"), feature("fresh", priority = 1)))
+        sessions(3)
+
+        repeat(2) {
+            DiscoveryCoach.nudgeShown("rejected")
+            DiscoveryCoach.nudgeDismissed("rejected")
+            now += 20 * day
+        }
+
+        assertEquals("fresh", nudge()!!.feature.id)
     }
 
     @Test

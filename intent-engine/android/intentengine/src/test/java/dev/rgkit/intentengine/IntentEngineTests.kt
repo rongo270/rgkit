@@ -51,8 +51,24 @@ class IntentEngineTests {
         val s = only()
         assertEquals(IntentType.RAGE_TAP, s.type)
         assertEquals("save", s.target)
-        assertEquals(0.6, s.confidence, 1e-9)
-        assertTrue(s.evidence, s.evidence.contains("3 taps"))
+        // Three taps spanning 240 ms of the 700 ms window.
+        assertEquals(0.83, s.confidence, 1e-9)
+        assertTrue(s.evidence, s.evidence.contains("3 taps within 240ms"))
+    }
+
+    @Test
+    fun theTighterTheBurstTheSurerTheSignal() {
+        repeat(3) { IntentEngine.onTap(100f, 200f, "save"); advance(10) }
+        val frantic = only().confidence
+
+        IntentEngine.reset()
+        advance(10_000)
+        repeat(3) { IntentEngine.onTap(100f, 200f, "save"); advance(330) }
+        val barely = only().confidence
+
+        assertEquals(0.94, frantic, 1e-9) // 20 ms of burst
+        assertEquals(0.62, barely, 1e-9)  // 660 ms: barely a burst at all
+        assertTrue("$frantic should beat $barely", frantic > barely)
     }
 
     @Test
@@ -132,8 +148,17 @@ class IntentEngineTests {
 
         val s = only()
         assertEquals(IntentType.DOUBLE_BACK, s.type)
-        assertEquals(0.7, s.confidence, 1e-9)
+        assertEquals(0.9, s.confidence, 1e-9) // 300 ms apart: hammering
         assertNull(s.target)
+        assertTrue(s.evidence, s.evidence.contains("300ms apart"))
+    }
+
+    @Test
+    fun aSlowerPairOfBackPressesIsLessCertain() {
+        IntentEngine.onBackPressed(); advance(1_200)
+        IntentEngine.onBackPressed()
+
+        assertEquals(0.7, only().confidence, 1e-9)
     }
 
     @Test
@@ -301,7 +326,7 @@ class IntentEngineTests {
     fun lowConfidenceSignalsCanBeSuppressedEntirely() {
         IntentEngine.config = IntentConfig(minConfidence = 0.8)
         IntentEngine.onDragAttempt("card")           // 0.7 — below the floor
-        repeat(3) { IntentEngine.onTap(1f, 1f, "x"); advance(100) } // 0.6 — below too
+        repeat(3) { IntentEngine.onTap(1f, 1f, "x"); advance(300) } // 0.65 — below too
 
         assertTrue(types().toString(), signals().isEmpty())
     }
@@ -335,12 +360,12 @@ class IntentEngineTests {
 
     @Test
     fun frustrationAddsUpTheWeightedSignals() {
-        repeat(3) { IntentEngine.onTap(100f, 200f, "save"); advance(100) } // rage 0.6 * 22
-        assertEquals(13, IntentEngine.frustrationScore())
+        repeat(3) { IntentEngine.onTap(100f, 200f, "save"); advance(100) } // rage 0.85 * 22
+        assertEquals(18, IntentEngine.frustrationScore())
 
         advance(1_000)
-        IntentEngine.onBackPressed(); advance(200); IntentEngine.onBackPressed() // 0.7 * 12
-        assertEquals(21, IntentEngine.frustrationScore())
+        IntentEngine.onBackPressed(); advance(200); IntentEngine.onBackPressed() // 0.9 * 12
+        assertEquals(29, IntentEngine.frustrationScore())
     }
 
     @Test

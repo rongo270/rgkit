@@ -322,6 +322,11 @@ object ScreenshotIQ {
         val codeTokenRegex = Regex("""[{};]|=>|==|!=|\bfun\b|\bdef\b|\bvoid\b|\breturn\b|\bimport\b|\bclass\b""")
         val urlRegex = Regex("""https?://\S+|www\.\S+\.\S+""")
         val bookingCodeRegex = Regex("""\b[A-Z0-9]{6}\b""")
+        // Whole tokens only: "404" must not fire on "word404", and "500" must
+        // not fire on a "1500" price. Substring matching is fine for the word
+        // keys below, where a hit inside a longer word is still evidence
+        // ("timeout" inside "SocketTimeoutException").
+        val httpStatusRegex = Regex("""\b(?:400|401|403|404|408|429|500|502|503|504)\b""")
 
         val moneyMatches = moneyRegex.findAll(text).map { it.value }.toList()
         val timeMatches = timeRegex.findAll(text).count()
@@ -346,7 +351,8 @@ object ScreenshotIQ {
         scores[ScreenshotKind.ERROR] =
             hits("error", "exception", "failed", "failure", "crash", "oops", "something went wrong",
                 "unable to", "couldn't", "could not", "try again", "not responding", "denied") * 2.0 +
-                hits("404", "500", "403", "timeout", "stacktrace", "at java.", "at kotlin.") * 2.5
+                (httpStatusRegex.findAll(text).count() +
+                    hits("timeout", "stacktrace", "at java.", "at kotlin.")) * 2.5
         scores[ScreenshotKind.CHAT] =
             timeMatches * 0.8 +
                 hits("typing", "online", "last seen", "delivered", "read", "reply", "message") * 1.5 +

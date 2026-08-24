@@ -87,6 +87,35 @@ class ScreenshotIQTests {
     }
 
     @Test
+    fun anHttpStatusOnItsOwnStillReadsAsAnError() {
+        val insight = classify(
+            """
+            HTTP 404
+            The page you were looking for is gone
+            """
+        )
+        assertEquals(ScreenshotKind.ERROR, insight.kind)
+    }
+
+    @Test
+    fun digitsInsideLongerNumbersAreNotStatusCodes() {
+        // "1500" and "word404" used to score as 403/404/500 hits and pushed
+        // ordinary screenshots into ERROR.
+        val prose = (1..300).joinToString(" ") { "lorem ipsum dolor sit amet 404th 1500 word403" }
+        assertEquals(ScreenshotKind.DOCUMENT, classify(prose).kind)
+
+        val receipt = classify(
+            """
+            Subtotal   1500.00 ILS
+            Tax         255.00 ILS
+            Total      1755.00 ILS
+            Receipt #4040 paid
+            """
+        )
+        assertEquals(ScreenshotKind.RECEIPT, receipt.kind)
+    }
+
+    @Test
     fun aMessageThreadIsAChat() {
         val insight = classify(
             """

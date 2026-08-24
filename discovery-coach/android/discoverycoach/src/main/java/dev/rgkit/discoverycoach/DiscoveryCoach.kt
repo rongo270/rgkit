@@ -295,7 +295,10 @@ object DiscoveryCoach {
         if (dayKey(now) == nudgeDay && nudgesToday >= config.maxPerDay) return null
 
         var best: DiscoverableFeature? = null
-        var bestScore = 0.0
+        // Ranking only — eligibility is decided by the gates below. Starting at
+        // zero silently made a heavily-nudged, twice-dismissed feature
+        // ineligible forever, since its score goes negative and never recovers.
+        var bestScore = Double.NEGATIVE_INFINITY
         var bestReason = ""
         for (f in catalog.values) {
             val s = states[f.id] ?: continue

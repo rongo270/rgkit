@@ -360,6 +360,7 @@ object IntentEngine {
 
     private fun detectRageTap(now: Long) {
         var count = 0
+        var spanMs = 0L
         var target: String? = null
         synchronized(lock) {
             val inWindow = taps.filter { now - it.t <= config.rageTapWindowMs }
@@ -370,14 +371,20 @@ object IntentEngine {
             }
             if (close.size < config.rageTapCount) return
             count = close.size
+            spanMs = last.t - close.first().t
             target = last.target
             taps.clear() // don't double-count the same burst
         }
+        // The burst is reported the moment it crosses the threshold, so `count`
+        // is all but always exactly rageTapCount. What actually separates a
+        // panicked hammering from three unlucky taps is how tightly they
+        // landed, so the confidence rides on the span, not on the count.
+        val tightness = 1.0 - (spanMs.toDouble() / config.rageTapWindowMs).coerceIn(0.0, 1.0)
         emit(
             IntentType.RAGE_TAP,
-            confidence = min(0.95, 0.6 + 0.12 * (count - config.rageTapCount)),
+            confidence = min(0.95, 0.6 + 0.35 * tightness),
             target = target,
-            evidence = "$count taps in ${config.rageTapWindowMs}ms in the same spot"
+            evidence = "$count taps within ${spanMs}ms in the same spot"
         )
     }
 
@@ -401,18 +408,23 @@ object IntentEngine {
     }
 
     private fun detectDoubleBack(now: Long) {
-        val count = synchronized(lock) {
-            backPresses.count { now - it <= config.doubleBackWindowMs }
+        var count = 0
+        var gapMs = 0L
+        synchronized(lock) {
+            val inWindow = backPresses.filter { now - it <= config.doubleBackWindowMs }
+            count = inWindow.size
+            if (count < 2) return
+            gapMs = now - inWindow[inWindow.size - 2]
+            backPresses.clear() // the pair is one signal, not two
         }
-        if (count >= 2) {
-            synchronized(lock) { backPresses.clear() }
-            emit(
-                IntentType.DOUBLE_BACK,
-                confidence = if (count >= 3) 0.9 else 0.7,
-                target = null,
-                evidence = "$count back presses within ${config.doubleBackWindowMs}ms"
-            )
-        }
+        // Same reasoning as [detectRageTap]: the pair fires as soon as it
+        // happens, so the gap between the two presses is the part that varies.
+        emit(
+            IntentType.DOUBLE_BACK,
+            confidence = if (gapMs <= config.doubleBackWindowMs / 3) 0.9 else 0.7,
+            target = null,
+            evidence = "$count back presses ${gapMs}ms apart"
+        )
     }
 
     private fun detectFastScroll(now: Long) {
