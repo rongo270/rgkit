@@ -85,6 +85,13 @@ object FormSense {
         val fields = LinkedHashMap<String, FieldAgg>()
     }
 
+    /**
+     * Time source for focus/active/completion timings. Production reads the
+     * wall clock; unit tests swap it so a filled-in form can be replayed at
+     * exact millisecond offsets.
+     */
+    internal var clock: () -> Long = { System.currentTimeMillis() }
+
     private val forms = HashMap<String, FormAgg>()
     private val liveTrackers = HashMap<String, FormTracker>()
 
@@ -227,7 +234,7 @@ object FormSense {
         fun field(fieldId: String): FieldTracker = FieldTracker(this, fieldId)
 
         internal fun onFocus(fieldId: String) {
-            val now = System.currentTimeMillis()
+            val now = clock()
             synchronized(lock) {
                 val agg = formAgg()
                 if (startedAt == 0L) { startedAt = now; agg.starts++ }
@@ -240,7 +247,7 @@ object FormSense {
         }
 
         internal fun onBlur(fieldId: String) {
-            val now = System.currentTimeMillis()
+            val now = clock()
             synchronized(lock) {
                 if (currentField == fieldId) {
                     flushActiveLocked(now)
@@ -251,7 +258,7 @@ object FormSense {
 
         internal fun onTextChanged(fieldId: String, newLength: Int) {
             synchronized(lock) {
-                if (startedAt == 0L) { startedAt = System.currentTimeMillis(); formAgg().starts++ }
+                if (startedAt == 0L) { startedAt = clock(); formAgg().starts++ }
                 val prev = lastLength[fieldId] ?: 0
                 lastLength[fieldId] = newLength
                 val delta = newLength - prev
@@ -267,7 +274,7 @@ object FormSense {
 
         /** The form was successfully submitted. Ends this attempt. */
         fun submitted() {
-            val now = System.currentTimeMillis()
+            val now = clock()
             synchronized(lock) {
                 if (finished) return
                 finished = true
@@ -285,7 +292,7 @@ object FormSense {
 
         /** The user gave up (called automatically when the app backgrounds). */
         fun abandoned() {
-            val now = System.currentTimeMillis()
+            val now = clock()
             synchronized(lock) {
                 if (finished || startedAt == 0L) {
                     liveTrackers.remove(formId)

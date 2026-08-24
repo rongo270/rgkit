@@ -128,6 +128,13 @@ object IntentEngine {
 
     private val lock = Any()
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "IntentEngine-io") }
+
+    /**
+     * Time source for every detector window. Production always reads the wall
+     * clock; unit tests swap it so a gesture burst can be laid down exactly
+     * instead of being raced against real milliseconds.
+     */
+    internal var clock: () -> Long = { System.currentTimeMillis() }
     private val main = Handler(Looper.getMainLooper())
     private val listeners = CopyOnWriteArrayList<(IntentSignal) -> Unit>()
 
@@ -176,7 +183,7 @@ object IntentEngine {
 
     /** Report a tap. Coordinates may be local to the target or global — just be consistent. */
     fun onTap(x: Float, y: Float, target: String? = null) {
-        val now = System.currentTimeMillis()
+        val now = clock()
         touch(now)
         synchronized(lock) {
             taps.addLast(Tap(now, x, y, target))
@@ -188,7 +195,7 @@ object IntentEngine {
 
     /** Report a back press (system back or your own up/back button). */
     fun onBackPressed() {
-        val now = System.currentTimeMillis()
+        val now = clock()
         touch(now)
         synchronized(lock) {
             backPresses.addLast(now)
@@ -199,7 +206,7 @@ object IntentEngine {
 
     /** Report scroll movement (signed pixels since the last call). */
     fun onScroll(deltaYPx: Float) {
-        val now = System.currentTimeMillis()
+        val now = clock()
         touch(now)
         synchronized(lock) {
             scrolls.addLast(Scroll(now, deltaYPx))
@@ -213,7 +220,7 @@ object IntentEngine {
      * (Compose: from onValueChange; Views: use [watchTextLengths] in IntentEngineAuto.kt).
      */
     fun onTextChanged(fieldId: String, newLength: Int) {
-        val now = System.currentTimeMillis()
+        val now = clock()
         touch(now)
         var fire = false
         var bursts = 0
@@ -253,7 +260,7 @@ object IntentEngine {
 
     /** Report a drag/swipe attempt on an element that is not draggable. */
     fun onDragAttempt(target: String? = null) {
-        touch(System.currentTimeMillis())
+        touch(clock())
         emit(
             IntentType.DRAG_ATTEMPT,
             confidence = 0.7,
@@ -267,7 +274,7 @@ object IntentEngine {
      * with the Activity class name; call it yourself for Compose destinations.
      */
     fun screenChanged(name: String) {
-        val now = System.currentTimeMillis()
+        val now = clock()
         synchronized(lock) {
             currentScreen = name
             hesitationFiredOn = null
@@ -304,7 +311,7 @@ object IntentEngine {
 
     /** Signal counts for today. */
     fun todayCounts(): Map<IntentType, Int> =
-        synchronized(lock) { daily[dayKey(System.currentTimeMillis())]?.toMap() ?: emptyMap() }
+        synchronized(lock) { daily[dayKey(clock())]?.toMap() ?: emptyMap() }
 
     /** The most recent signals, newest first. */
     fun recentSignals(limit: Int = 50): List<IntentSignal> =
@@ -315,7 +322,7 @@ object IntentEngine {
      * 0 = calm. 25+ = friction worth looking at. 60+ = the user is having a bad time.
      */
     fun frustrationScore(windowMs: Long = 600_000): Int {
-        val cutoff = System.currentTimeMillis() - windowMs
+        val cutoff = clock() - windowMs
         val weights = mapOf(
             IntentType.RAGE_TAP to 22.0,
             IntentType.REPEATED_TAP to 10.0,
@@ -495,7 +502,7 @@ object IntentEngine {
         screenOverride: String? = null,
     ) {
         if (confidence < config.minConfidence) return
-        val now = System.currentTimeMillis()
+        val now = clock()
         val key = "${type.name}|${target ?: ""}"
         val signal: IntentSignal
         synchronized(lock) {

@@ -217,15 +217,19 @@ object RhythmEngine {
             hourOfWeek.fill(0.0); gaps.clear(); dailyOpens.clear()
             for (dq in lengthsByHour) dq.clear()
             lastOpenAt = 0; totalOpens = 0
+            lastDecayDay = ""; sessionStartedAt = 0
         }
         save()
     }
 
     // ------------------------------------------------------------- recording
 
-    /** Called with the lock held. */
-    private fun onAppOpen() {
-        val now = System.currentTimeMillis()
+    /**
+     * Called with the lock held. Records an app open at [now]. The clock is a
+     * parameter so unit tests can lay down a history in one pass that real
+     * usage would take weeks to build.
+     */
+    internal fun onAppOpen(now: Long = System.currentTimeMillis()) {
         // Ignore rotations / instant relaunches.
         if (lastOpenAt > 0 && now - lastOpenAt < 30_000) {
             sessionStartedAt = if (sessionStartedAt == 0L) now else sessionStartedAt
@@ -251,10 +255,9 @@ object RhythmEngine {
         save()
     }
 
-    /** Called with the lock held. */
-    private fun onAppClose() {
+    /** Called with the lock held. [now] is injectable for the same reason as [onAppOpen]. */
+    internal fun onAppClose(now: Long = System.currentTimeMillis()) {
         if (sessionStartedAt == 0L) return
-        val now = System.currentTimeMillis()
         val length = now - sessionStartedAt
         sessionStartedAt = 0
         if (length < 1_000) return

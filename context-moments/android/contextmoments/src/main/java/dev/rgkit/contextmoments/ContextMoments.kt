@@ -209,7 +209,7 @@ object ContextMoments {
     fun exportJson(): String = synchronized(lock) { toJson().toString(2) }
 
     fun reset() {
-        synchronized(lock) { history.clear() }
+        synchronized(lock) { history.clear(); candidate = null; candidateRounds = 0 }
         save()
     }
 
@@ -240,6 +240,15 @@ object ContextMoments {
         }
         val motion = sampleMotion(context)
         val signals = readSignals(context, motion.first, motion.second)
+        return decide(signals).also { lastSnapshot = it }
+    }
+
+    /**
+     * Pure: the signals of one round → the moment they add up to. Split out of
+     * [evaluateOnce] so the fusion and its confidence maths can be driven
+     * directly, with no sensors and no Context.
+     */
+    internal fun decide(signals: SignalState, at: Long = System.currentTimeMillis()): MomentSnapshot {
         val scores = fuse(signals)
         val best = scores.maxByOrNull { it.value }
         val bestMoment = best?.key ?: Moment.UNKNOWN
@@ -248,17 +257,17 @@ object ContextMoments {
         val margin = bestScore - second
         val confidence = min(1.0, max(0.0, bestScore * 0.75 + margin * 0.5))
         val moment = if (bestScore < 0.35) Moment.UNKNOWN else bestMoment
-        val snapshot = MomentSnapshot(
+        return MomentSnapshot(
             moment = moment,
             confidence = (confidence * 100).toInt() / 100.0,
             scores = scores.mapValues { (it.value * 100).toInt() / 100.0 },
             signals = signals,
+            at = at,
         )
-        lastSnapshot = snapshot
-        return snapshot
     }
 
-    private fun handleStability(snapshot: MomentSnapshot) {
+    /** Debounce: a new moment only enters [history] after [MomentsConfig.stabilityRounds] rounds. */
+    internal fun handleStability(snapshot: MomentSnapshot) {
         var fire = false
         synchronized(lock) {
             val stable = history.lastOrNull()?.moment
@@ -514,7 +523,7 @@ object ContextMoments {
     // ---------------------------------------------------------------- fusion
 
     /** Rule-based scorer. Each moment collects weighted evidence into 0..~1. */
-    private fun fuse(s: SignalState): Map<Moment, Double> {
+    internal fun fuse(s: SignalState): Map<Moment, Double> {
         val h = s.hourOfDay
         val scores = HashMap<Moment, Double>()
         fun add(m: Moment, w: Double, on: Boolean) {

@@ -206,8 +206,14 @@ object GripSense {
 
     // ------------------------------------------------------------- recording
 
+    /**
+     * Time source for the two-thumb alternation window. Production reads the
+     * wall clock; unit tests swap it to place taps exactly.
+     */
+    internal var clock: () -> Long = { System.currentTimeMillis() }
+
     internal fun recordTap(x: Double, y: Double) {
-        val now = System.currentTimeMillis()
+        val now = clock()
         synchronized(lock) {
             val col = min(COLS - 1, max(0, (x * COLS).toInt()))
             val row = min(ROWS - 1, max(0, (y * ROWS).toInt()))

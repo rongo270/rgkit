@@ -261,7 +261,12 @@ object PerceivedSpeed {
         }
     }
 
-    private fun observeFrame(deltaMs: Double, nowMs: Long) {
+    /**
+     * One observed frame: [deltaMs] since the previous frame, [nowMs] its
+     * timestamp. Internal rather than private so the jank/TTI accounting can
+     * be driven without a Choreographer.
+     */
+    internal fun observeFrame(deltaMs: Double, nowMs: Long) {
         synchronized(lock) {
             val agg = screens[currentScreen ?: return] ?: return
             agg.frames++
@@ -286,7 +291,8 @@ object PerceivedSpeed {
         }
     }
 
-    private fun addLatencySample(latencyMs: Long) {
+    /** Touch-down → next frame, in ms. Internal for the same reason as [observeFrame]. */
+    internal fun addLatencySample(latencyMs: Long) {
         if (latencyMs !in 0..5_000) return
         synchronized(lock) {
             val agg = screens[currentScreen ?: return] ?: return
@@ -348,7 +354,8 @@ object PerceivedSpeed {
         watchdog.postDelayed(check, 5_000)
     }
 
-    private fun recordStall(durationMs: Long, stack: List<String>) {
+    /** A main-thread stall the watchdog caught. Internal so tests can stage one. */
+    internal fun recordStall(durationMs: Long, stack: List<String>) {
         val event: StallEvent
         synchronized(lock) {
             val screen = currentScreen

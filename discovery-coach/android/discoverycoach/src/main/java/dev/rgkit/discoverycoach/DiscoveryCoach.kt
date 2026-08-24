@@ -98,6 +98,12 @@ object DiscoveryCoach {
 
     private val lock = Any()
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "DiscoveryCoach-io") }
+
+    /**
+     * Time source for cooldowns, backoff and session gaps. Production reads the
+     * wall clock; unit tests swap it so weeks of nudge history fit in one run.
+     */
+    internal var clock: () -> Long = { System.currentTimeMillis() }
     private val main = Handler(Looper.getMainLooper())
 
     private var appContext: Context? = null
@@ -173,7 +179,7 @@ object DiscoveryCoach {
             val state = states.getOrPut(featureId) { FeatureState() }
             state.usedCount++
             if (state.firstUsedAt == 0L) {
-                state.firstUsedAt = System.currentTimeMillis()
+                state.firstUsedAt = clock()
                 if (state.shownCount > 0) state.usedAfterNudge = true
             }
         }
@@ -187,7 +193,7 @@ object DiscoveryCoach {
      * list end reached). Returns null when nothing should be shown — which is
      * most of the time, by design.
      */
-    fun maybeNudge(now: Long = System.currentTimeMillis()): Nudge? {
+    fun maybeNudge(now: Long = clock()): Nudge? {
         val nudge = synchronized(lock) { pickLocked(now) } ?: return null
         return nudge
     }
@@ -210,7 +216,7 @@ object DiscoveryCoach {
 
     /** You displayed the nudge. Starts cooldowns. */
     fun nudgeShown(featureId: String) {
-        val now = System.currentTimeMillis()
+        val now = clock()
         synchronized(lock) {
             val state = states.getOrPut(featureId) { FeatureState() }
             state.shownCount++
@@ -269,9 +275,12 @@ object DiscoveryCoach {
 
     fun exportJson(): String = synchronized(lock) { toJson().toString(2) }
 
+    /** Forget everything, catalog included — [register] again after calling this. */
     fun reset() {
         synchronized(lock) {
-            states.clear(); sessionCount = 0; lastNudgeAt = 0; nudgesToday = 0
+            catalog.clear(); states.clear()
+            sessionCount = 0; lastNudgeAt = 0; nudgesToday = 0
+            nudgeDay = ""; nudgedThisSession = false; lastSessionStartAt = 0
         }
         save()
     }
@@ -319,8 +328,9 @@ object DiscoveryCoach {
         return Nudge(feature, bestReason)
     }
 
-    private fun onSessionStart() {
-        val now = System.currentTimeMillis()
+    /** A new app session began (the lifecycle callback calls this for you). */
+    internal fun onSessionStart() {
+        val now = clock()
         synchronized(lock) {
             if (now - lastSessionStartAt < 30_000) return // rotation, not a new session
             lastSessionStartAt = now

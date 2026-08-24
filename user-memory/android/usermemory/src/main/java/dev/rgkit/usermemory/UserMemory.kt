@@ -556,8 +556,11 @@ object UserMemory {
     fun forget(key: String) {
         synchronized(lock) {
             val trimmed = key.trim()
-            val removed = prefs.remove(trimmed) != null || signals.remove(trimmed) != null
-            if (removed) scheduleSave()
+            // Both sides must run: || would short-circuit and leave the
+            // learned signals behind whenever an explicit preference existed.
+            val removedPref = prefs.remove(trimmed) != null
+            val removedSignals = signals.remove(trimmed) != null
+            if (removedPref || removedSignals) scheduleSave()
         }
     }
 

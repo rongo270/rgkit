@@ -48,7 +48,14 @@ object AdaptiveUi {
 
     private val lock = Any()
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "AdaptiveUi-io") }
-    private val random = Random()
+    /** Injectable so unit tests can seed the bandit and get a repeatable draw. */
+    internal var random: Random = Random()
+
+    /**
+     * Time source for how long a collection was on screen. Production reads the
+     * wall clock; unit tests swap it to stage a dwell exactly.
+     */
+    internal var clock: () -> Long = { System.currentTimeMillis() }
 
     private var appContext: Context? = null
     private var loaded = false
@@ -99,7 +106,7 @@ object AdaptiveUi {
     ): LayoutStyle {
         val style = sample(collectionId, allowed)
         synchronized(lock) {
-            sessions[collectionId] = Session(style, System.currentTimeMillis())
+            sessions[collectionId] = Session(style, clock())
         }
         return style
     }
@@ -123,7 +130,7 @@ object AdaptiveUi {
         synchronized(lock) {
             val s = sessions.remove(collectionId) ?: return
             style = s.style
-            val viewMs = System.currentTimeMillis() - s.startedAt
+            val viewMs = clock() - s.startedAt
             reward = when {
                 // Barely looked and didn't touch: this layout bounced them.
                 viewMs < 2_000 && s.clicks == 0 -> 0.05

@@ -432,7 +432,8 @@ object ScreenshotIQ {
 
     // ----------------------------------------------------------- deliver/io
 
-    private fun deliver(insight: ScreenshotInsight) {
+    /** Records an insight and fans it out. Internal so tests can stage one. */
+    internal fun deliver(insight: ScreenshotInsight) {
         synchronized(lock) {
             kindTotals[insight.kind] = (kindTotals[insight.kind] ?: 0) + 1
             history.addLast(HistoryEntry(insight.at, insight.kind, insight.confidence))

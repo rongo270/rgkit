@@ -68,6 +68,12 @@ object FlowLearning {
     private val lock = Any()
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "FlowLearning-io") }
 
+    /**
+     * Time source for the session-gap cut. Production reads the wall clock;
+     * unit tests swap it to place events on either side of the gap.
+     */
+    internal var clock: () -> Long = { System.currentTimeMillis() }
+
     private var appContext: Context? = null
     private var loaded = false
 
@@ -113,7 +119,7 @@ object FlowLearning {
      * Use stable snake_case names ("product_detail", "add_to_cart").
      */
     fun track(step: String) {
-        val now = System.currentTimeMillis()
+        val now = clock()
         synchronized(lock) {
             if (lastEventAt > 0 && now - lastEventAt > config.sessionGapMs) closeSessionLocked()
             lastEventAt = now
@@ -405,7 +411,8 @@ object FlowLearning {
 
     // ------------------------------------------------------------- sessions
 
-    private fun closeSession() {
+    /** Ends the open session (the lifecycle callback does this on background). */
+    internal fun closeSession() {
         synchronized(lock) { closeSessionLocked() }
         save()
     }
