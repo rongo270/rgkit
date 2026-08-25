@@ -10,7 +10,7 @@ optional `Modifier.senseField` helper — the core tracker is plain Kotlin.
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:form-sense:0.1.0")
+    implementation("io.github.rongo270:form-sense:0.2.0")
 }
 ```
 

@@ -10,7 +10,7 @@ dependencies beyond the Compose BOM.
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:feature-usage:0.1.0")
+    implementation("io.github.rongo270:feature-usage:0.2.0")
 }
 ```
 

@@ -23,8 +23,8 @@ already in every Android project.
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:exit-reason:0.1.0")
-    implementation("io.github.rongo270:intent-engine:0.1.0")
+    implementation("io.github.rongo270:exit-reason:0.2.0")
+    implementation("io.github.rongo270:intent-engine:0.2.0")
 }
 ```
 
@@ -47,7 +47,7 @@ repository:
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0"),
+    .package(url: "https://github.com/rongo270/rgkit.git", from: "0.2.0"),
 ]
 ```
 

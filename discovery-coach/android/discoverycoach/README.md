@@ -10,7 +10,7 @@ permissions.
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:discovery-coach:0.1.0")
+    implementation("io.github.rongo270:discovery-coach:0.2.0")
 }
 ```
 

@@ -10,7 +10,7 @@ Declares only `ACCESS_NETWORK_STATE` (normal permission).
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:context-moments:0.1.0")
+    implementation("io.github.rongo270:context-moments:0.2.0")
 }
 ```
 

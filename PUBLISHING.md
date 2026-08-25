@@ -12,7 +12,7 @@ own, it does not have to match your package names.
 
 ```kotlin
 dependencies {
-    implementation("io.github.rongo270:exit-reason:0.1.0")
+    implementation("io.github.rongo270:exit-reason:0.2.0")
 }
 ```
 ```kotlin
@@ -38,6 +38,13 @@ not enough, since that only tells the *daemon* which JDK to use.
 
 Without `pinentry-mac`, gpg falls back to a curses prompt that cannot draw in a
 non-interactive shell, and signing fails.
+
+Signing is also serialized through a Gradle shared service (`gpgSerializer` in
+`build.gradle.kts`). With `org.gradle.parallel=true` the Sign tasks otherwise
+hand gpg-agent several signing requests at once and it fails one of them with
+`Process 'command 'gpg'' finished with non-zero exit value 2` — the failure
+that blocked the 0.1.x releases. Don't remove that `usesService(...)` line;
+the alternative is remembering `--no-parallel` on every release.
 
 ---
 
@@ -93,12 +100,12 @@ passphrase can sign releases as you.
 
 ```bash
 # 1. Bump the version in ./gradle.properties
-#    VERSION_NAME=0.1.0
+#    VERSION_NAME=0.2.0
 
 # 2. Build the signed bundle for all 13 SDKs
 ./gradlew centralBundle
 
-# 3. Upload build/central/rgkit-0.1.0-bundle.zip at
+# 3. Upload build/central/rgkit-0.2.0-bundle.zip at
 #    https://central.sonatype.com -> Publish Component
 ```
 
@@ -106,8 +113,8 @@ The portal validates the bundle, shows you the 13 components, and waits. Click
 **Publish** to push to Maven Central. It appears on
 `repo1.maven.org` within ~15 minutes and on search.maven.org within a few hours.
 
-**Versions are permanent.** You can never overwrite `0.1.0` once published —
-only release `0.1.1`. Use the portal's **Drop** button to discard a bundle
+**Versions are permanent.** You can never overwrite `0.2.0` once published —
+only release `0.2.1`. Use the portal's **Drop** button to discard a bundle
 before publishing if something looks wrong.
 
 ### Useful checks before you upload

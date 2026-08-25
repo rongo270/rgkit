@@ -10,7 +10,7 @@ Android library module. Kotlin, minSdk 24. One dependency:
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:screenshot-intelligence:0.1.0")
+    implementation("io.github.rongo270:screenshot-intelligence:0.2.0")
 }
 ```
 

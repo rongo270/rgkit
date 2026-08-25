@@ -396,6 +396,11 @@ table.data th { color: var(--ink-3); font-weight: 500; }
 .waitlist input { flex: 1; min-width: 200px; font-family: var(--mono); font-size: .82rem; padding: .58rem .75rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--panel-2); color: var(--ink); }
 .waitlist input::placeholder { color: var(--ink-3); }
 
+.whatsnew { margin-top: 1.2rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); padding: .85rem .95rem; }
+.whatsnew h3 { margin: 0 0 .6rem; font-family: var(--mono); font-size: .76rem; font-weight: 600; color: var(--ink-3); letter-spacing: .02em; }
+.whatsnew ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.whatsnew li { position: relative; padding-inline-start: .95rem; font-size: .85rem; color: var(--ink-2); line-height: 1.5; }
+.whatsnew li::before { content: "\2014"; position: absolute; inset-inline-start: 0; color: var(--accent); }
 .note { border-inline-start: 2px solid var(--accent); padding-inline-start: .9rem; padding-block: .1rem; color: var(--ink-2); font-size: .88rem; margin-top: 1.2rem; }
 
 .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem,4vw,3rem); }
@@ -566,7 +571,7 @@ footer.ft { border-top: 1px solid var(--rule); padding: 2rem 0 3rem; margin-top:
 
 <header class="nav">
   <div class="wrap nav-in">
-    <a class="brand" href="#/" style="text-decoration:none"><b>rgkit</b><span>v0.1.0</span></a>
+    <a class="brand" href="#/" style="text-decoration:none"><b>rgkit</b><span>v0.2.0</span></a>
     <nav class="navlinks">
       <a href="#/android" data-nav="android" data-t="nav.android">android</a>
       <a href="#/ios" data-nav="ios" data-t="nav.ios">ios</a>
@@ -682,6 +687,11 @@ const STR = {
     "a.p3":"So all 13 SDKs run entirely on-device. No backend, no key, no account, no permission prompts. You get a verdict with a confidence score and the evidence behind it — and when the evidence is thin, you get nothing at all rather than a confident guess.",
     "a.sdks":"SDKs", "a.plats":"Platforms", "a.amin":"Android min", "a.imin":"iOS min",
     "a.lic":"Licence", "a.ver":"Version", "a.grp":"Group", "a.pkgs":"Packages",
+    "a.new":"What's new in 0.2.0",
+    "a.new1":"<b>Every SDK is tested.</b> 375 Android and 89 iOS unit tests now cover the scoring maths, the thresholds and the on-disk state \u2014 all 13 SDKs, not just two.",
+    "a.new2":"<b>Eight fixes</b> those tests turned up: a <code>forget()</code> that left learned data behind, three <code>reset()</code> calls that didn't fully reset, and screenshots read as errors because a number happened to contain 404.",
+    "a.new3":"<b>Sharper confidence.</b> Rage-tap and double-back now scale with how fast the burst was, and a user's own peak hour finally scores a true 1.0.",
+    "a.newnote":"No public API changed \u2014 upgrading from 0.1.0 is a version bump. Some confidence values shift, and <code>DiscoveryCoach.reset()</code> now clears the registered catalogue too.",
     "a.note":"Built by Rongo. Every SDK is Apache 2.0 — use them in commercial apps, fork them, copy a single file into your source tree. The install instructions in each README cover all three."
   },
 
@@ -772,6 +782,11 @@ const STR = {
     "a.p3":"לכן כל 13 הערכות רצות לגמרי על המכשיר. בלי שרת, בלי מפתח, בלי חשבון, בלי בקשות הרשאה. מקבלים הכרעה עם ציון ביטחון והראיות מאחוריה — וכשהראיות דלות, מקבלים כלום במקום ניחוש בטוח.",
     "a.sdks":"ערכות", "a.plats":"פלטפורמות", "a.amin":"מינימום אנדרואיד", "a.imin":"מינימום iOS",
     "a.lic":"רישיון", "a.ver":"גרסה", "a.grp":"קבוצה", "a.pkgs":"חבילות",
+    "a.new":"מה חדש ב־0.2.0",
+    "a.new1":"<b>כל ערכה נבדקת.</b> 375 בדיקות יחידה באנדרואיד ו־89 ב־iOS מכסות עכשיו את חישובי הניקוד, הספים והמצב שנשמר לדיסק — כל 13 הערכות, לא רק שתיים.",
+    "a.new2":"<b>שמונה תיקונים</b> שהבדיקות חשפו: ‏<code>forget()</code> שהשאיר מאחוריו את מה שנלמד, שלוש קריאות ‏<code>reset()</code> שלא איפסו הכול, וצילומי מסך שסווגו כשגיאה רק מפני שהופיע בהם מספר שמכיל 404.",
+    "a.new3":"<b>ציוני ביטחון חדים יותר.</b> נקישות זעם וחזרה כפולה מדורגות לפי מהירות הרצף, ושעת השיא של המשתמש מקבלת סוף־סוף 1.0 מלא.",
+    "a.newnote":"אין שינוי ב־API הציבורי — השדרוג מ־0.1.0 הוא החלפת מספר גרסה בלבד. שימו לב שחלק מערכי הביטחון זזו, ו‏<code>DiscoveryCoach.reset()</code> מנקה עכשיו גם את קטלוג היכולות הרשום.",
     "a.note":"נבנה על ידי Rongo. כל ערכה תחת רישיון Apache 2.0 — אפשר להשתמש בהן באפליקציות מסחריות, לפצל אותן, או להעתיק קובץ בודד לעץ הקוד. הוראות ההתקנה בכל README מכסות את שלוש הדרכים."
   }
 };
@@ -788,7 +803,7 @@ const SDKS = [
     tag_he:"מבינה למה משתמשים פועלים — לא רק על מה הם לחצו.",
     long:"Reads rage taps, double-back, type-delete loops, scan-scrolling, failed drags, hesitation and zigzag navigation, then fuses them into a live frustration score. Every signal carries a confidence and the evidence behind it.",
     long_he:"מזהה נקישות זעם, חזרה כפולה, לולאות הקלדה־מחיקה, גלילה סורקת, גרירות כושלות, היסוס וניווט מזגזג — ומאחדת הכול לציון תסכול חי. לכל אות יש ציון ביטחון והראיות שמאחוריו.",
-    signals:["RAGE_TAP","HESITATION","DOUBLE_BACK","TYPE_DELETE_LOOP","SCAN_SCROLL","FAILED_DRAG","ZIGZAG_NAV"],
+    signals:["RAGE_TAP","REPEATED_TAP","HESITATION","DOUBLE_BACK","TYPE_DELETE_LOOP","FAST_SCROLL_SCAN","DRAG_ATTEMPT","ZIGZAG_NAVIGATION"],
     code:`IntentEngine.init(this)
 
 IntentEngine.addListener { signal ->
@@ -806,7 +821,7 @@ val score = IntentEngine.frustrationScore()`,
     tag_he:"הרגע הנוכחי של המשתמש, מאוחד משישה חיישנים.",
     long:"Combines motion, screen state, audio routes, DND, network and time of day into one verdict: driving, walking, working, in a meeting, just woke up, watching TV. Returns UNKNOWN rather than guessing when the evidence is thin.",
     long_he:"משלבת תנועה, מצב מסך, יציאות שמע, נא לא להפריע, רשת ושעה ביום להכרעה אחת: נוהג, הולך, עובד, בפגישה, בדיוק התעורר, צופה בטלוויזיה. כשהראיות דלות היא מחזירה UNKNOWN במקום לנחש.",
-    signals:["DRIVING","WALKING","WORKING","IN_MEETING","JUST_WOKE_UP","WATCHING_TV"],
+    signals:["COMMUTING","WALKING","WORKING","IN_MEETING","JUST_WOKE_UP","WATCHING_TV"],
     code:`ContextMoments.init(this)
 
 ContextMoments.sampleNow { snapshot ->
@@ -873,7 +888,7 @@ AdaptiveUi.reportEngagement("catalog", weight = 1.0)`,
     tag_he:"יועץ UX על המכשיר, שמגיש דוח.",
     long:"Mines screen orderings, drop-offs, confusion loops, funnel leaks and common paths, then emits ranked recommendations in plain language. All of it computed on the device.",
     long_he:"כורה סדרי מסכים, נשירות, לולאות בלבול, דליפות במשפך ומסלולים נפוצים — ומפיקה המלצות מדורגות בשפה פשוטה. הכול מחושב על המכשיר.",
-    signals:["DROP_OFF","CONFUSION_LOOP","FUNNEL_LEAK","COMMON_PATH"],
+    signals:["ORDERING","DROP_OFF","LOOP","FUNNEL_LEAK","COMMON_PATH"],
     code:`FlowLearning.init(this)
 FlowLearning.screen("checkout")
 
@@ -932,7 +947,7 @@ FormSense.report("signup").abandonedAt   // "phone_number"`,
     tag_he:"יודעת באיזו יד מחזיקים את הטלפון.",
     long:"Detects handedness and thumb reach, heatmaps taps and flags the controls users physically strain to reach. Ships a Compose debug overlay so you can see the reach zones while you build.",
     long_he:"מזהה יד דומיננטית וטווח אגודל, ממפה נגיעות ומסמנת פקדים שמשתמשים מתאמצים פיזית להגיע אליהם. כוללת שכבת דיבאג ל־Compose שמראה את אזורי ההישג בזמן הפיתוח.",
-    signals:["LEFT_HAND","RIGHT_HAND","TWO_HAND","STRAIN_ZONE"],
+    signals:["RIGHT_THUMB","LEFT_THUMB","TWO_HANDED","STRETCH","HARD"],
     code:`GripSense.init(this)
 
 GripSense.handedness()      // LEFT / RIGHT / TWO_HAND
@@ -1792,7 +1807,7 @@ function heroView() {
             <button data-inst="spm" role="tab" aria-selected="false">swift</button>
           </div>
           <div class="install-body">
-            <code id="instcode" dir="ltr">implementation("io.github.rongo270:intent-engine:0.1.0")</code>
+            <code id="instcode" dir="ltr">implementation("io.github.rongo270:intent-engine:0.2.0")</code>
             <button class="copy" id="copybtn">copy</button>
           </div>
         </div>
@@ -1884,8 +1899,8 @@ function catalogView(plat) {
       </div>
       <div style="margin-bottom:1.6rem">
         ${isIos
-          ? codeBlock("Package.swift", `.package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0")`)
-          : codeBlock("app/build.gradle.kts", `implementation("io.github.rongo270:${list[0].id}:0.1.0")`)}
+          ? codeBlock("Package.swift", `.package(url: "https://github.com/rongo270/rgkit.git", from: "0.2.0")`)
+          : codeBlock("app/build.gradle.kts", `implementation("io.github.rongo270:${list[0].id}:0.2.0")`)}
       </div>
       <div class="rows">
         ${list.map(s => `<button class="row" data-goto="${s.id}">
@@ -1902,8 +1917,8 @@ function detailView(id) {
   const s = SDKS.find(x => x.id === id);
   if (!s) return `<section class="wrap"><p>404</p></section>`;
   const install = s.plat === "both"
-    ? `.package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0")`
-    : `implementation("io.github.rongo270:${s.id}:0.1.0")`;
+    ? `.package(url: "https://github.com/rongo270/rgkit.git", from: "0.2.0")`
+    : `implementation("io.github.rongo270:${s.id}:0.2.0")`;
   return `
   <section>
     <div class="wrap">
@@ -1920,7 +1935,7 @@ function detailView(id) {
           <dl class="kv">
             <div><dt>${t("d.group")}</dt><dd>io.github.rongo270</dd></div>
             <div><dt>${t("d.artifact")}</dt><dd>${s.id}</dd></div>
-            <div><dt>${t("d.version")}</dt><dd>0.1.0</dd></div>
+            <div><dt>${t("d.version")}</dt><dd>0.2.0</dd></div>
             <div><dt>${t("d.package")}</dt><dd>dev.rgkit.${s.id.replace(/-/g,"")}</dd></div>
             <div><dt>${t("d.minsdk")}</dt><dd>${s.plat === "both" ? "24 · iOS 15" : "24"}</dd></div>
             <div><dt>${t("d.perms")}</dt><dd>${t("d.none")}</dd></div>
@@ -2032,10 +2047,19 @@ function aboutView() {
             <div><dt>${t("a.amin")}</dt><dd>API 24</dd></div>
             <div><dt>${t("a.imin")}</dt><dd>15.0</dd></div>
             <div><dt>${t("a.lic")}</dt><dd>Apache 2.0</dd></div>
-            <div><dt>${t("a.ver")}</dt><dd>0.1.0</dd></div>
+            <div><dt>${t("a.ver")}</dt><dd>0.2.0</dd></div>
             <div><dt>${t("a.grp")}</dt><dd>io.github.rongo270</dd></div>
             <div><dt>${t("a.pkgs")}</dt><dd>dev.rgkit.*</dd></div>
           </dl>
+          <div class="whatsnew">
+            <h3>${t("a.new")}</h3>
+            <ul>
+              <li>${t("a.new1")}</li>
+              <li>${t("a.new2")}</li>
+              <li>${t("a.new3")}</li>
+            </ul>
+            <p class="note" style="margin-top:.85rem">${t("a.newnote")}</p>
+          </div>
           <p class="note" style="margin-top:1.2rem">${t("a.note")}</p>
         </div>
       </div>
@@ -2279,8 +2303,8 @@ function render() {
 
 function wireInstall() {
   const snippets = {
-    gradle: 'implementation("io.github.rongo270:intent-engine:0.1.0")',
-    spm: '.package(url: "https://github.com/rongo270/rgkit.git", from: "0.1.0")'
+    gradle: 'implementation("io.github.rongo270:intent-engine:0.2.0")',
+    spm: '.package(url: "https://github.com/rongo270/rgkit.git", from: "0.2.0")'
   };
   document.querySelectorAll("[data-inst]").forEach(b => {
     b.addEventListener("click", () => {

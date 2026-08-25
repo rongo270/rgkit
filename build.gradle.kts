@@ -1,4 +1,6 @@
 import com.android.build.gradle.LibraryExtension
+import org.gradle.api.services.BuildService
+import org.gradle.api.services.BuildServiceParameters
 import org.gradle.plugins.signing.Sign
 
 plugins {
@@ -16,6 +18,19 @@ val stagingRepo = layout.buildDirectory.dir("staging-deploy")
 // task can order itself after it.
 val clearStaging by tasks.registering(Delete::class) {
     delete(stagingRepo)
+}
+
+/**
+ * Serializes the `gpg` calls. With `org.gradle.parallel=true` the Sign tasks
+ * fire several gpg processes at gpg-agent at once and it fails one of them
+ * with exit 2 — which is what used to break `publishAllToStaging`. A shared
+ * service capped at one user is the narrow fix: only signing is serialized,
+ * the rest of the build still runs in parallel.
+ */
+abstract class GpgSerializer : BuildService<BuildServiceParameters.None>
+
+val gpgSerializer = gradle.sharedServices.registerIfAbsent("gpgSerializer", GpgSerializer::class) {
+    maxParallelUsages.set(1)
 }
 
 subprojects {
@@ -103,6 +118,7 @@ subprojects {
             // gpg-agent passphrase prompt Gradle often cannot show (it has no
             // tty), so local installs are left unsigned.
             tasks.withType<Sign>().configureEach {
+                usesService(gpgSerializer)
                 onlyIf {
                     gradle.startParameter.taskNames.none { it.contains("ToMavenLocal") }
                 }

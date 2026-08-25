@@ -11,7 +11,7 @@ core engine is plain Kotlin.
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:intent-engine:0.1.0")
+    implementation("io.github.rongo270:intent-engine:0.2.0")
 }
 ```
 

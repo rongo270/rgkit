@@ -10,7 +10,7 @@ optional `GripHeatmapOverlay` debug composable — the engine is plain Kotlin.
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:grip-sense:0.1.0")
+    implementation("io.github.rongo270:grip-sense:0.2.0")
 }
 ```
 

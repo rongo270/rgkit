@@ -10,7 +10,7 @@ permissions.
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.rongo270:exit-reason:0.1.0")
+    implementation("io.github.rongo270:exit-reason:0.2.0")
 }
 ```
 
